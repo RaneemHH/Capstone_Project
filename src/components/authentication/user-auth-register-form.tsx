@@ -1,11 +1,10 @@
-
 import * as React from "react"
 import { Icons } from "@/components/icons.tsx"
 import { cn } from "@/lib/utils.ts"
 import { Button } from "@/components/ui/button.tsx"
 import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
-import { signUp } from "@/services/auth-service.ts";
+import { signUp } from "@/services/user-profile-service.ts";
 
 // interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -24,6 +23,7 @@ export function UserAuthRegisterForm({ className, ...props }: React.HTMLAttribut
                 name: name,
                 email: email,
                 password: password,
+                gender: "FEMALE",
                 // roles: "ROLE_USER",
             });
             setIsLoading(false)
@@ -43,14 +43,14 @@ export function UserAuthRegisterForm({ className, ...props }: React.HTMLAttribut
             <form onSubmit={handleSignUp}>
                 <div className="grid gap-2">
                     <div className="grid gap-2">
-                        <Label  htmlFor="name">
-                            Name
+                        <Label htmlFor="name">
+                            الاسم
                         </Label>
                         <Input
                             id="name"
                             value={name}
                             onChange={(event) => setName(event.target.value)}
-                            placeholder="Enter your name"
+                            placeholder="أدخل اسمك"
                             type="name"
                             autoCapitalize="none"
                             autoComplete="name"
@@ -60,7 +60,7 @@ export function UserAuthRegisterForm({ className, ...props }: React.HTMLAttribut
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="email">
-                            Email
+                            البريد الإلكتروني
                         </Label>
                         <Input
                             id="email"
@@ -76,13 +76,13 @@ export function UserAuthRegisterForm({ className, ...props }: React.HTMLAttribut
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="password">
-                            Password
+                            كلمة المرور
                         </Label>
                         <Input
                             id="password"
                             value={password}
                             onChange={(event) => setPassword(event.target.value)}
-                            placeholder="Enter your password"
+                            placeholder="أدخل كلمة المرور"
                             type="password"
                             autoCapitalize="none"
                             autoComplete="current-password"
@@ -94,7 +94,7 @@ export function UserAuthRegisterForm({ className, ...props }: React.HTMLAttribut
                         {isLoading && (
                             <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                         )}
-                        Sign Up with Email
+                        إنشاء حساب
                     </Button>
                 </div>
             </form>
@@ -103,21 +103,14 @@ export function UserAuthRegisterForm({ className, ...props }: React.HTMLAttribut
                     <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
-          </span>
+                    <span className="bg-background px-2 text-muted-foreground">
+                        أو تابع باستخدام
+                    </span>
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                <Button variant="outline" type="button" disabled={isLoading}>
-                    {isLoading ? (
-                        <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <Icons.gitHub className="mr-2 h-4 w-4" />
-                    )}{" "}
-                    GitHub
-                </Button>
-                <Button variant="outline" type="button" disabled={isLoading}>
+            <div className="grid grid-cols-1 gap-4">
+                <Button variant="outline" type="button" disabled={isLoading}
+                    onClick={handleGoogleAuth}>
                     {isLoading ? (
                         <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
@@ -128,4 +121,17 @@ export function UserAuthRegisterForm({ className, ...props }: React.HTMLAttribut
             </div>
         </div>
     )
+    function handleGoogleAuth() {
+        try {
+            setIsLoading(true)
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080"
+            // Start OAuth at the backend endpoint; backend should be configured to redirect to Google
+            window.location.href = `${API_BASE_URL}/oauth2/authorization/google`
+        } catch {
+            setIsLoading(false)
+        }
+    }
 }
+
+
+
