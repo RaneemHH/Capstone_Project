@@ -2,15 +2,14 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
-
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* font-family: system-ui, Avenir, Helvetica, Arial, sans-serif; */
+  font-family: 'Cairo', sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  /*background-color: #242424;*/
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -18,13 +17,58 @@
   -moz-osx-font-smoothing: grayscale;
 
   --radius: 0.625rem;
-  --background: aliceblue;
-  --foreground:var(--color-blue-950);
+
+  --background: white;       
+  --foreground: #0F408F;  
+  --card: white;
+  --card-foreground: #0F408F;
+  --popover: white;
+  --popover-foreground: #0F408F;
+  --primary: #89ADFF;          
+  --primary-foreground: #0F408F;
+  --secondary: #BDE4FF;      
+  --secondary-foreground: #0F408F;
+  --muted: #DEFC8E;           
+  --muted-foreground: #0F408F;
+  --accent: #EF7148;        
+  --accent-foreground: white;
+  --destructive: #EF7148;
+  --destructive-foreground: white;
+  --border: #BDE4FF;
+  --input: #BDE4FF;
+  --ring: #89ADFF;
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: #BDE4FF;
+  --sidebar-foreground: #0F408F;
+  --sidebar-primary: #89ADFF;
+  --sidebar-primary-foreground: #0F408F;
+  --sidebar-accent: #EF7148;
+  --sidebar-accent-foreground: white;
+  --sidebar-border: #89ADFF;
+  --sidebar-ring: #89ADFF;
+  
+  /* Custom folder colors - blue theme for folder cards */
+  --folder-gradient-start: 239 84% 67%;
+  --folder-gradient-end: 230 94% 62%;
+  --folder-shadow: 239 84% 67%;
+  
+  /* File card colors inside folders */
+  --file-card: 0 0% 100%;
+  --file-card-border: 220 13% 91%;
+  --file-card-shadow: 220 20% 85%;
+  
+  /* --background: aliceblue; */
+  /* --background: #F4F2EF;
+  --foreground:#213E60;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary:var(--color-blue-950);
+  --primary: #94B6EF;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -48,7 +92,7 @@
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-ring: oklch(0.708 0 0); */
 }
 
 @theme inline {
@@ -71,6 +115,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -121,13 +166,81 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  
+  /* Custom folder colors - blue theme for folder cards (darker for dark mode) */
+  --folder-gradient-start: 239 84% 57%;
+  --folder-gradient-end: 230 94% 52%;
+  --folder-shadow: 239 84% 40%;
+  
+  /* File card colors inside folders (darker for dark mode) */
+  --file-card: 222 47% 12%;
+  --file-card-border: 222 47% 20%;
+  --file-card-shadow: 222 47% 5%;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* font-family: 'Cairo', sans-serif; */
+
+
+  }
+  html {
+        direction: rtl;
+
   }
   body {
     @apply bg-background text-foreground;
+    /* font-family: 'Inter', sans-serif; */
+
   }
 }
+
+@layer components {
+  .folder-gradient {
+    background: linear-gradient(
+      160deg,
+      hsl(var(--folder-gradient-start)) 0%,
+      hsl(var(--folder-gradient-end)) 100%
+    );
+  }
+
+  .folder-shadow {
+    box-shadow: 
+      0 4px 12px -2px hsl(var(--folder-shadow) / 0.25),
+      0 2px 4px -1px hsl(var(--folder-shadow) / 0.1);
+  }
+
+  .folder-shadow-hover {
+    box-shadow: 
+      0 20px 40px -8px hsl(var(--folder-shadow) / 0.35),
+      0 8px 16px -4px hsl(var(--folder-shadow) / 0.2);
+  }
+
+  .file-card-shadow {
+    box-shadow: 
+      0 2px 8px -2px hsl(var(--file-card-shadow) / 0.3),
+      0 1px 2px -1px hsl(var(--file-card-shadow) / 0.1);
+  }
+
+  .folder-tab {
+    clip-path: polygon(0 30%, 25% 0, 100% 0, 100% 100%, 0 100%);
+  }
+
+  .folder-body {
+    border-radius: var(--radius);
+  }
+}
+
+@layer utilities {
+  .transition-folder {
+    transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .transition-file-card {
+    transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
