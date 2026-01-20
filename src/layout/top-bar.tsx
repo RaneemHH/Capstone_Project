@@ -56,7 +56,7 @@ export function TopBar({ onMenuClick, breadcrumbs }: TopBarProps) {
 
   return (
     <header className="bg-card border-b border-border">
-      <div className="px-4 md:px-6 lg:px-8 py-4 md:py-5 lg:py-6">
+      <div className="px-4 md:px-6 lg:px-8 py-2 md:py-3">
         <div className="flex items-center justify-between gap-4">
           {/* Page Title on RIGHT in RTL */}
           <div className="flex items-center gap-3">

@@ -1,12 +1,12 @@
 import {
-  Plus,
   LayoutDashboard,
   type LucideIcon,
   Home,
   BarChart3,
   ClipboardList,
+  Calendar,
 } from "lucide-react";
-import {  Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,14 +36,19 @@ export function Sidebar({
 }: SidebarProps) {
   const { roles } = useAuthStore();
   const location = useLocation();
-  const isAdmin = roles === "ROLE_ADMIN";
+  const isOrgOwner = roles.includes("ORG_OWNER");
 
-  // Admin menu items
-  const adminMenuItems: MenuItem[] = [
+  // Org Owner menu items
+  const orgOwnerMenuItems: MenuItem[] = [
     {
       icon: LayoutDashboard,
       label: "لوحة التحكم",
       route: "/dashboard",
+    },
+    {
+      icon: Calendar,
+      label: "المعارض",
+      route: "/dashboard/exhibitions",
     },
     {
       icon: BarChart3,
@@ -57,12 +62,17 @@ export function Sidebar({
     },
   ];
 
-  // User menu items
-  const userMenuItems: MenuItem[] = [
+  // Student menu items
+  const studentMenuItems: MenuItem[] = [
     {
       icon: Home,
       label: "الرئيسية",
       route: "/dashboard",
+    },
+    {
+      icon: Calendar,
+      label: "المعارض",
+      route: "/dashboard/exhibitions",
     },
     {
       icon: BarChart3,
@@ -76,7 +86,7 @@ export function Sidebar({
     },
   ];
 
-  const menuItems = isAdmin ? adminMenuItems : userMenuItems;
+  const menuItems = isOrgOwner ? orgOwnerMenuItems : studentMenuItems;
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -113,27 +123,27 @@ export function Sidebar({
       >
         <div className="p-4 md:p-2 lg:p-6 flex flex-col h-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {/* Logo */}
-        
-          
-            <div className="flex items-center gap-3 mb-6 md:mb-8 md:justify-center lg:justify-start">
+
+
+          <div className="flex items-center gap-3 mb-6 md:mb-8 md:justify-center lg:justify-start">
             {/* <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shrink-0">
               <span className="text-white font-bold">P</span>
             </div> */}
-              <Link
+            <Link
               to="/"
               className="flex items-center gap-3 hover:opacity-80 transition-opacity group"
-              >
-             <img
-              src={logo}
-              alt="logo"
-              className="h-12 w-12 rounded-full object-cover border-2 border-background shadow-lg group-hover:scale-110 transition-transform"
+            >
+              <img
+                src={logo}
+                alt="logo"
+                className="h-12 w-12 rounded-full object-cover border-2 border-background shadow-lg group-hover:scale-110 transition-transform"
               />
               <span className="font-bold text-foreground md:hidden lg:block">
                 جمعية المركز الإسلامي للتوجيه والتعليم العالي
               </span>
-              </Link>
-          </div>            
-          
+            </Link>
+          </div>
+
           {/* Create Button */}
           {/* <Tooltip>
             <TooltipTrigger asChild>
@@ -159,7 +169,7 @@ export function Sidebar({
             {menuItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.route;
-              
+
               return (
                 <Tooltip key={index}>
                   <TooltipTrigger asChild>
@@ -187,7 +197,9 @@ export function Sidebar({
           </nav>
 
           {/* Upgrade Card - Desktop */}
-          <Card className="bg-gradient-to-br from-accent/20 to-accent/30 border-0 mt-auto md:hidden lg:block">
+          <Card
+          // className="bg-gradient-to-br from-accent/20 to-accent/30 border-0 mt-auto md:hidden lg:block"
+          >
             <CardContent className="p-4">
               <Button
                 variant="default"

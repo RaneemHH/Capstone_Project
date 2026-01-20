@@ -22,6 +22,10 @@ import Profile from "./pages/profile.tsx";
 import Analytics from "./pages/analytics.tsx";
 import Attempts from "./pages/attempts.tsx";
 import AnalyzePersonality from "./pages/analyze-personality.tsx";
+import OrgOwnerExhibitions from "./pages/org-owner-exhibitions.tsx";
+import OrgOwnerExhibition from "./pages/org-owner-exhibition.tsx";
+import StudentExhibitions from "./pages/student-exhibitions.tsx";
+import Municipality from "./components/exhibition/municipality.tsx";
 
 function App() {
     const { accessToken, roles } = useAuthStore();
@@ -48,6 +52,7 @@ function App() {
                         roles[0] !== "ORG_OWNER" ? (
                             [
                                 { index: true, element: <UserHome /> },
+                                { path: "exhibitions", element: <StudentExhibitions /> },
                                 { path: "analytics", element: <Analytics /> },
                                 { path: "attempts", element: <Attempts /> },
                                 { path: "tests/:testId/take/:attemptId", element: <TakeTest /> },
@@ -62,6 +67,15 @@ function App() {
                                     element: <Dashboard />,
                                     children: [
                                         { path: 'addBaseTestSheet', element: <AddBaseTestSheet /> },
+                                    ]
+                                },
+                                { path: 'exhibitions', element: <OrgOwnerExhibitions /> },
+                                { path: 'exhibitions/createExhibition', element: <OrgOwnerExhibitions /> },
+                                {
+                                    path: 'exhibitions/:id',
+                                    element: <OrgOwnerExhibition />,
+                                    children: [
+                                        { path: 'municipality', element: <Municipality /> }
                                     ]
                                 },
                                 { path: 'analytics', element: <Analytics /> },

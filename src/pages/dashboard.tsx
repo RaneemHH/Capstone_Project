@@ -31,7 +31,7 @@ export default function Dashboard() {
   }, [])
 
   return (
-    <>
+    <div className="p-4 md:p-6 lg:p-8">
       <HeroSection />
       <div className="flex-col md:flex">
         <div className="flex-1 space-y-6">
@@ -72,6 +72,6 @@ export default function Dashboard() {
         </div>
       </div>
       <Outlet />
-    </>
+    </div>
   )
 }
