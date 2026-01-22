@@ -25,7 +25,8 @@ import AnalyzePersonality from "./pages/analyze-personality.tsx";
 import OrgOwnerExhibitions from "./pages/org-owner-exhibitions.tsx";
 import OrgOwnerExhibition from "./pages/org-owner-exhibition.tsx";
 import StudentExhibitions from "./pages/student-exhibitions.tsx";
-import Municipality from "./components/exhibition/municipality.tsx";
+import RequestVenue from "./components/exhibition/request-venue.tsx";
+import MunicipalityDashboard from "./pages/municipality-dashboard.tsx";
 
 function App() {
     const { accessToken, roles } = useAuthStore();
@@ -49,7 +50,11 @@ function App() {
                     element:
                         !accessToken ? <Navigate to="/login" replace /> : <LayoutWrapper />,
                     children:
-                        roles[0] !== "ORG_OWNER" ? (
+                        roles[0] === "MUNICIPALITY_ADMIN" ? (
+                            [
+                                { index: true, element: <MunicipalityDashboard /> },
+                            ]
+                        ) : roles[0] !== "ORG_OWNER" ? (
                             [
                                 { index: true, element: <UserHome /> },
                                 { path: "exhibitions", element: <StudentExhibitions /> },
@@ -74,9 +79,11 @@ function App() {
                                 {
                                     path: 'exhibitions/:id',
                                     element: <OrgOwnerExhibition />,
-                                    children: [
-                                        { path: 'municipality', element: <Municipality /> }
-                                    ]
+
+                                },
+                                {
+                                    path: 'exhibitions/:id/venues',
+                                    element: <RequestVenue />,
                                 },
                                 { path: 'analytics', element: <Analytics /> },
                                 { path: 'attempts', element: <Attempts /> },

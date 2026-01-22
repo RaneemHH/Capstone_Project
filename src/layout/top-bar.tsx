@@ -52,6 +52,7 @@ export function TopBar({ onMenuClick, breadcrumbs }: TopBarProps) {
   };
 
   const userInitials = getInitials(userProfile?.name);
+  console.log("userProfile", userProfile?.email, userProfile?.name);
   const userName = userProfile?.name || "مستخدم";
 
   return (

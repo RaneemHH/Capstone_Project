@@ -1,169 +1,280 @@
-import { useState } from "react";
-import { Search, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useVenueStore } from "@/stores/venue-store";
+import { useMunicipalityStore } from "@/stores/municipality-store";
+import { venueRequestService } from "@/services/venue-request-service";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+    Search,
+    MapPin,
+    Users,
+    DollarSign,
+    Maximize2,
+    Loader2,
+    Building2,
+    CheckCircle2
+} from "lucide-react";
+import { formatRentalFee, formatSpace, getAvailabilityLabel, getAvailabilityBadgeClass } from "@/types/venue";
+import VenueRegistrationDialog from "@/components/exhibition/venue-registration-dialog";
 
-// Mock municipalities data
-const municipalities = [
-    {
-        id: 1,
-        name: "بلدية بيروت",
-        location: "بيروت",
-        capacity: 500,
-        image: "https://images.unsplash.com/photo-1580674285054-bed31e145f59?w=400&h=300&fit=crop",
-        gradient: "from-[hsl(239,84%,67%)] to-[hsl(230,94%,62%)]"
-    },
-    {
-        id: 2,
-        name: "بلدية طرابلس",
-        location: "طرابلس",
-        capacity: 400,
-        image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop",
-        gradient: "from-[hsl(200,84%,67%)] to-[hsl(190,94%,62%)]"
-    },
-    {
-        id: 3,
-        name: "بلدية صيدا",
-        location: "صيدا",
-        capacity: 350,
-        image: "https://images.unsplash.com/photo-1511818966892-d7d671e672a2?w=400&h=300&fit=crop",
-        gradient: "from-[hsl(280,84%,67%)] to-[hsl(270,94%,62%)]"
-    },
-    {
-        id: 4,
-        name: "بلدية زحلة",
-        location: "البقاع",
-        capacity: 300,
-        image: "https://images.unsplash.com/photo-1577495508048-b635879837f1?w=400&h=300&fit=crop",
-        gradient: "from-[hsl(160,84%,67%)] to-[hsl(150,94%,62%)]"
-    },
-    {
-        id: 5,
-        name: "بلدية جبيل",
-        location: "جبل لبنان",
-        capacity: 250,
-        image: "https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=400&h=300&fit=crop",
-        gradient: "from-[hsl(320,84%,67%)] to-[hsl(310,94%,62%)]"
-    },
-    {
-        id: 6,
-        name: "بلدية صور",
-        location: "الجنوب",
-        capacity: 280,
-        image: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400&h=300&fit=crop",
-        gradient: "from-[hsl(40,84%,67%)] to-[hsl(30,94%,62%)]"
-    },
-];
-
-interface RequestVenueProps {
-    onNext?: () => void;
-    onPrevious?: () => void;
-}
-
-export default function RequestVenue({ onNext, onPrevious }: RequestVenueProps) {
-    const [selectedMunicipality, setSelectedMunicipality] = useState<number | null>(null);
+export default function RequestVenue() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { id: exhibitionId } = useParams();
+    const { venues, isLoading, error, selectedVenueId, fetchVenuesByMunicipality, setSelectedVenue } = useVenueStore();
+    const { selectedMunicipalityId } = useMunicipalityStore();
     const [searchQuery, setSearchQuery] = useState("");
-    const [locationFilter, setLocationFilter] = useState("الكل");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [selectedVenueForRegistration, setSelectedVenueForRegistration] = useState<number | null>(null);
 
-    const filteredMunicipalities = municipalities.filter(m => {
-        const matchesSearch = m.name.includes(searchQuery);
-        const matchesLocation = locationFilter === "الكل" || m.location === locationFilter;
-        return matchesSearch && matchesLocation;
-    });
+    // Get municipalityId from navigation state or from store
+    const municipalityId = location.state?.municipalityId || selectedMunicipalityId;
 
-    const locations = ["الكل", ...Array.from(new Set(municipalities.map(m => m.location)))];
+    useEffect(() => {
+        if (municipalityId) {
+            fetchVenuesByMunicipality(municipalityId);
+        }
+    }, [municipalityId, fetchVenuesByMunicipality]);
+
+    const filteredVenues = venues.filter(venue =>
+        venue.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        venue.address.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const handleVenueSelect = (venueId: number) => {
+        setSelectedVenue(venueId);
+    };
+
+    const handleRegisterClick = (venueId: number) => {
+        setSelectedVenueForRegistration(venueId);
+        setDialogOpen(true);
+    };
+
+    const handleRegister = async (orgNotes: string) => {
+        if (!exhibitionId || !selectedVenueForRegistration) {
+            toast.error("معرف المعرض أو المكان غير موجود");
+            setDialogOpen(false);
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            // Set response deadline to 7 days from now
+            const responseDeadline = new Date();
+            responseDeadline.setDate(responseDeadline.getDate() + 7);
+
+            await venueRequestService.createVenueRequest({
+                exhibitionId: Number(exhibitionId),
+                venueId: selectedVenueForRegistration,
+                orgNotes: orgNotes || "طلب حجز مكان للمعرض",
+                responseDeadline: responseDeadline.toISOString()
+            });
+
+            toast.success("تم التسجيل بنجاح", {
+                description: "تم إرسال طلب حجز المكان إلى البلدية"
+            });
+
+            setDialogOpen(false);
+            setSelectedVenueForRegistration(null);
+
+            // Navigate back or to next step after successful registration
+            setTimeout(() => {
+                navigate(`/dashboard/exhibitions/${exhibitionId}`);
+            }, 1500);
+        } catch (error) {
+            console.error('Failed to create venue request:', error);
+            toast.error("فشل التسجيل", {
+                description: error instanceof Error ? error.message : "حدث خطأ أثناء إرسال الطلب"
+            });
+            setDialogOpen(false);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                    <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+                    <p className="text-muted-foreground">جاري تحميل الأماكن...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Card className="border-destructive">
+                    <CardContent className="pt-6">
+                        <p className="text-destructive text-center">{error}</p>
+                        <Button
+                            onClick={() => municipalityId && fetchVenuesByMunicipality(municipalityId)}
+                            className="mt-4 w-full"
+                            variant="outline"
+                        >
+                            إعادة المحاولة
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    if (!municipalityId) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Card className="border-dashed">
+                    <CardContent className="pt-6 text-center">
+                        <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground mb-4">
+                            يرجى اختيار بلدية أولاً
+                        </p>
+                        <Button onClick={() => navigate(-1)}>
+                            العودة لاختيار البلدية
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     return (
-        <div className="flex-1 flex flex-col">
-            <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-6">
-                اختر البلدية لإقامة المعرض
-            </h1>
+        <div className="flex-1 flex flex-col p-6">
+            <div className="mb-6">
+                <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
+                    اختر المكان للمعرض
+                </h1>
+                <p className="text-muted-foreground">
+                    اختر المكان المناسب من الأماكن المتاحة
+                </p>
+            </div>
 
-            {/* Filters */}
-            <div className="flex gap-4 mb-6">
-                <div className="flex-1 relative">
+            {/* Search */}
+            <div className="mb-6">
+                <div className="relative">
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                        placeholder="ابحث عن بلدية..."
+                        placeholder="ابحث عن مكان..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pr-10"
                     />
                 </div>
-                <Select value={locationFilter} onValueChange={setLocationFilter}>
-                    <SelectTrigger className="w-[200px]">
-                        <MapPin className="w-4 h-4 ml-2" />
-                        <SelectValue placeholder="الموقع" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {locations.map(loc => (
-                            <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
             </div>
 
-            {/* Municipality Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 overflow-y-auto flex-1">
-                {filteredMunicipalities.map((municipality) => (
-                    <div
-                        key={municipality.id}
-                        onClick={() => setSelectedMunicipality(municipality.id)}
-                        className={`cursor-pointer rounded-xl overflow-hidden border-2 transition-all h-fit ${selectedMunicipality === municipality.id
-                            ? "border-primary ring-4 ring-primary/20"
-                            : "border-border hover:border-primary/50"
-                            }`}
-                    >
-                        {/* Image */}
-                        <div className="relative h-32 overflow-hidden">
-                            <img
-                                src={municipality.image}
-                                alt={municipality.name}
-                                className="w-full h-full object-cover"
-                            />
-                            <div className={`absolute inset-0 bg-gradient-to-br ${municipality.gradient} opacity-40`} />
-                        </div>
+            {/* Venues Grid */}
+            {filteredVenues.length === 0 ? (
+                <Card className="border-dashed">
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                        <Building2 className="w-16 h-16 text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground text-center">
+                            {searchQuery ? "لا توجد أماكن تطابق البحث" : "لا توجد أماكن متاحة في هذه البلدية"}
+                        </p>
+                    </CardContent>
+                </Card>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 overflow-y-auto flex-1">
+                    {filteredVenues.map((venue, index) => {
+                        // Mock images array
+                        const mockImages = [
+                            "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1511578314322-379afb476865?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1505236858219-8359eb29e329?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1519167758481-83f29da8c8b0?w=400&h=300&fit=crop",
+                        ];
 
-                        {/* Content */}
-                        <div className="p-4 bg-card">
-                            <h3 className="font-bold text-foreground mb-2">{municipality.name}</h3>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                                <MapPin className="w-4 h-4" />
-                                <span>{municipality.location}</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                السعة: {municipality.capacity} شخص
-                            </p>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                        return (
+                            <Card
+                                key={venue.id}
+                                className={`cursor-pointer transition-all duration-200 hover:shadow-lg overflow-hidden p-0 ${selectedVenueId === venue.id
+                                    ? "border-primary border-2 bg-primary/5"
+                                    : "hover:border-primary/50"
+                                    }`}
+                                onClick={() => handleVenueSelect(venue.id)}
+                            >
+                                {/* Image */}
+                                <div className="relative h-40 overflow-hidden">
+                                    <img
+                                        src={mockImages[index % mockImages.length]}
+                                        alt={venue.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute top-2 right-2">
+                                        <Badge
+                                            className={`${getAvailabilityBadgeClass(venue.available)}`}
+                                        >
+                                            {getAvailabilityLabel(venue.available)}
+                                        </Badge>
+                                    </div>
+                                    {selectedVenueId === venue.id && (
+                                        <div className="absolute top-2 left-2">
+                                            <CheckCircle2 className="w-6 h-6 text-primary bg-white rounded-full" />
+                                        </div>
+                                    )}
+                                </div>
 
-            {/* Bottom Controls */}
-            <div className="flex justify-between items-center pt-6 border-t border-border">
-                <button
-                    onClick={onPrevious}
-                    disabled
-                    className="inline-flex items-center gap-2 px-6 py-3 text-muted-foreground bg-muted/50 rounded-xl font-medium cursor-not-allowed"
-                >
-                    <ChevronRight className="w-4 h-4" />
-                    السابق
-                </button>
-                <button
-                    onClick={onNext}
-                    disabled={!selectedMunicipality}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    التالي
-                    <ChevronLeft className="w-4 h-4" />
-                </button>
-            </div>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-lg">{venue.name}</CardTitle>
+                                </CardHeader>
+
+                                <CardContent className="space-y-3">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <MapPin className="w-4 h-4 shrink-0" />
+                                        <span className="truncate">{venue.address}</span>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Users className="w-4 h-4 shrink-0" />
+                                        <span>السعة: {venue.maxCapacity.toLocaleString('ar')} شخص</span>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Maximize2 className="w-4 h-4 shrink-0" />
+                                        <span>المساحة: {formatSpace(venue.spaceSqm)}</span>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <DollarSign className="w-4 h-4 shrink-0" />
+                                        <span className="font-semibold text-foreground">
+                                            {formatRentalFee(venue.rentalFeePerDay)} / يوم
+                                        </span>
+                                    </div>
+
+                                    <Button
+                                        className="w-full mt-4 mb-4"
+                                        variant={selectedVenueId === venue.id ? "default" : "outline"}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleVenueSelect(venue.id);
+                                            handleRegisterClick(venue.id);
+                                        }}
+                                        disabled={!venue.available || isSubmitting}
+                                    >
+                                        {isSubmitting ? "جاري التسجيل..." : venue.available ? "تسجيل" : "غير متاح"}
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* Venue Registration Dialog */}
+            <VenueRegistrationDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                venueName={venues.find(v => v.id === selectedVenueForRegistration)?.name || ""}
+                onConfirm={handleRegister}
+                isLoading={isSubmitting}
+            />
         </div>
     );
 }

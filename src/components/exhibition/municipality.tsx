@@ -1,16 +1,23 @@
 import { useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useMunicipalityStore } from "@/stores/municipality-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Phone, Mail, Building2, Loader2 } from "lucide-react";
+import { MapPin, Phone, Mail, Building2, Loader2, ArrowLeft, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Municipality() {
+    const navigate = useNavigate();
+    const { id } = useParams();
     const { municipalities, isLoading, error, selectedMunicipalityId, fetchMunicipalities, setSelectedMunicipality } = useMunicipalityStore();
 
     useEffect(() => {
         fetchMunicipalities();
     }, [fetchMunicipalities]);
+
+    const handleVenueClick = (municipalityId: number) => {
+        setSelectedMunicipality(municipalityId);
+        navigate(`/dashboard/exhibitions/${id}/venues`, { state: { municipalityId } });
+    };
 
     if (isLoading) {
         return (
@@ -66,17 +73,28 @@ export default function Municipality() {
                         <Card
                             key={municipality.id}
                             className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${selectedMunicipalityId === municipality.id
-                                    ? "border-primary border-2 bg-primary/5"
-                                    : "hover:border-primary/50"
+                                ? "border-primary border-2 bg-primary/5"
+                                : "hover:border-primary/50"
                                 }`}
                             onClick={() => setSelectedMunicipality(municipality.id)}
                         >
                             <CardHeader className="pb-3">
                                 <div className="flex items-start justify-between">
                                     <CardTitle className="text-lg">{municipality.name}</CardTitle>
-                                    {selectedMunicipalityId === municipality.id && (
-                                        <Badge className="bg-primary">محدد</Badge>
-                                    )}
+
+                                    <Button
+                                        variant="link"
+                                        size="sm"
+                                        className="text-primary p-0 h-auto font-semibold flex items-center gap-1"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleVenueClick(municipality.id);
+                                        }}
+                                    >
+                                        عرض الأماكن
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </Button>
+
                                 </div>
                             </CardHeader>
                             <CardContent className="space-y-3">
@@ -97,14 +115,6 @@ export default function Municipality() {
                             </CardContent>
                         </Card>
                     ))}
-                </div>
-            )}
-
-            {selectedMunicipalityId && (
-                <div className="flex justify-end mt-6">
-                    <Button size="lg" className="px-8">
-                        متابعة إلى اختيار المكان
-                    </Button>
                 </div>
             )}
         </div>
