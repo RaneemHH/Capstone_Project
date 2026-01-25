@@ -30,13 +30,9 @@ export function CreateExhibitionSheet({ open, onOpenChange }: CreateExhibitionSh
         endDate: "",
         startTime: "09:00:00",
         endTime: "17:00:00",
-        totalAvailableBooths: 50,
         standardBoothSqm: 9.0,
-        maxBoothsPerUniversity: 3,
-        maxBoothsPerProvider: 2,
         expectedVisitors: 500,
         scheduleJson: "{}",
-        finalizationDeadline: "",
     });
 
     const handleClose = () => {
@@ -61,13 +57,9 @@ export function CreateExhibitionSheet({ open, onOpenChange }: CreateExhibitionSh
                 endDate: "",
                 startTime: "09:00:00",
                 endTime: "17:00:00",
-                totalAvailableBooths: 50,
                 standardBoothSqm: 9.0,
-                maxBoothsPerUniversity: 3,
-                maxBoothsPerProvider: 2,
                 expectedVisitors: 500,
                 scheduleJson: "{}",
-                finalizationDeadline: "",
             });
 
             // Close sheet and navigate back
@@ -175,65 +167,16 @@ export function CreateExhibitionSheet({ open, onOpenChange }: CreateExhibitionSh
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="finalizationDeadline">الموعد النهائي للتسجيل *</Label>
+                        <Label htmlFor="standardBoothSqm">مساحة الطاولة (م²) *</Label>
                         <Input
-                            id="finalizationDeadline"
-                            type="datetime-local"
+                            id="standardBoothSqm"
+                            type="number"
                             required
-                            value={formData.finalizationDeadline.substring(0, 16)}
-                            onChange={(e) => setFormData({ ...formData, finalizationDeadline: e.target.value + ":00" })}
+                            min="0.1"
+                            step="0.1"
+                            value={formData.standardBoothSqm}
+                            onChange={(e) => setFormData({ ...formData, standardBoothSqm: parseFloat(e.target.value) })}
                         />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="totalAvailableBooths">عدد الطاولات المتاحة *</Label>
-                            <Input
-                                id="totalAvailableBooths"
-                                type="number"
-                                required
-                                min="1"
-                                value={formData.totalAvailableBooths}
-                                onChange={(e) => setFormData({ ...formData, totalAvailableBooths: parseInt(e.target.value) })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="standardBoothSqm">مساحة الطاولة (م²) *</Label>
-                            <Input
-                                id="standardBoothSqm"
-                                type="number"
-                                required
-                                min="0.1"
-                                step="0.1"
-                                value={formData.standardBoothSqm}
-                                onChange={(e) => setFormData({ ...formData, standardBoothSqm: parseFloat(e.target.value) })}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="maxBoothsPerUniversity">الحد الأقصى للجامعات *</Label>
-                            <Input
-                                id="maxBoothsPerUniversity"
-                                type="number"
-                                required
-                                min="1"
-                                value={formData.maxBoothsPerUniversity}
-                                onChange={(e) => setFormData({ ...formData, maxBoothsPerUniversity: parseInt(e.target.value) })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="maxBoothsPerProvider">الحد الأقصى للمقدمين *</Label>
-                            <Input
-                                id="maxBoothsPerProvider"
-                                type="number"
-                                required
-                                min="1"
-                                value={formData.maxBoothsPerProvider}
-                                onChange={(e) => setFormData({ ...formData, maxBoothsPerProvider: parseInt(e.target.value) })}
-                            />
-                        </div>
                     </div>
 
                     <div className="space-y-2">

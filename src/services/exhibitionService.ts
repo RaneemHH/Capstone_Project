@@ -3,8 +3,6 @@ import type {
     ExhibitionRequest,
     ExhibitionResponse,
     ExhibitionStatus,
-    BoothLimitsRequest,
-    InvitationCapacityResponse,
     AvailableBoothsMap
 } from '@/types/exhibition';
 
@@ -62,22 +60,46 @@ class ExhibitionService {
         return response.data;
     }
 
-    // ----------------- Set Booth Limits -----------------
-    async setBoothLimits(
-        exhibitionId: number,
-        request: BoothLimitsRequest
-    ): Promise<InvitationCapacityResponse> {
-        const response = await api.post<InvitationCapacityResponse>(
-            `/api/exhibitions/${exhibitionId}/booth-limits`,
-            request
-        );
-        return response.data;
-    }
 
     // ----------------- Cancel Exhibition -----------------
     async cancelExhibition(exhibitionId: number, reason: string): Promise<ExhibitionResponse> {
         const response = await api.post<ExhibitionResponse>(
             `/api/exhibitions/${exhibitionId}/cancel?reason=${encodeURIComponent(reason)}`
+        );
+        return response.data;
+    }
+
+    // ----------------- Confirm Exhibition -----------------
+    async confirmExhibition(exhibitionId: number, finalizationDeadline: string): Promise<ExhibitionResponse> {
+        // Ensure the finalizationDeadline is in ISO DateTime format (add seconds if missing)
+        const formattedDeadline = finalizationDeadline.includes(':00') 
+            ? finalizationDeadline 
+            : `${finalizationDeadline}:00`;
+        
+        const response = await api.post<ExhibitionResponse>(
+            `/api/exhibitions/confirm/${exhibitionId}`,
+            null,
+            { 
+                params: { 
+                    finalizationDeadline: formattedDeadline 
+                } 
+            }
+        );
+        return response.data;
+    }
+
+    // ----------------- Start Exhibition -----------------
+    async startExhibition(exhibitionId: number): Promise<ExhibitionResponse> {
+        const response = await api.post<ExhibitionResponse>(
+            `/api/exhibitions/start/${exhibitionId}`
+        );
+        return response.data;
+    }
+
+    // ----------------- Complete Exhibition -----------------
+    async completeExhibition(exhibitionId: number): Promise<ExhibitionResponse> {
+        const response = await api.post<ExhibitionResponse>(
+            `/api/exhibitions/complete/${exhibitionId}`
         );
         return response.data;
     }

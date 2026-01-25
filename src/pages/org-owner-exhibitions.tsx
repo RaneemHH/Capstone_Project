@@ -2,18 +2,17 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
     Calendar,
-    MapPin,
-    Users,
+    Search,
     Building2,
     CheckCircle2,
     Clock,
     Plus,
-    Search,
     ArrowUpDown,
     Filter,
     ChevronUp,
     AlertCircle,
     BarChart3,
+    Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -166,9 +165,9 @@ export default function OrgOwnerExhibitions() {
             if (sortBy === "الأحدث") return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
             if (sortBy === "الأقدم") return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
             if (sortBy === "أقرب موعد نهائي") {
-                const aDeadline = a.finalizationDeadline || a.startDate;
-                const bDeadline = b.finalizationDeadline || b.startDate;
-                return new Date(aDeadline).getTime() - new Date(bDeadline).getTime();
+                const aDate = a.startDate;
+                const bDate = b.startDate;
+                return new Date(aDate).getTime() - new Date(bDate).getTime();
             }
             return 0;
         });
@@ -368,37 +367,64 @@ export default function OrgOwnerExhibitions() {
                                         onClick={() => navigate(`/dashboard/exhibitions/${exhibition.id}`)}
                                     >
                                         <CardHeader className="pb-3">
-                                            <CardTitle className="text-lg line-clamp-2">
-                                                {exhibition.title}
-                                            </CardTitle>
-                                            <Badge className={`${statusInfo.className} border w-fit mt-2`}>
-                                                {ExhibitionStatusLabels[exhibition.status]}
-                                            </Badge>
+                                            <div className="flex items-start justify-between gap-2">
+                                                <CardTitle className="text-lg line-clamp-2 flex-1">
+                                                    {exhibition.title}
+                                                </CardTitle>
+                                                <Badge className={`${statusInfo.className} border shrink-0`}>
+                                                    {ExhibitionStatusLabels[exhibition.status]}
+                                                </Badge>
+                                            </div>
                                         </CardHeader>
 
                                         {/* Main content - flexible */}
                                         <CardContent className="space-y-3 flex-1">
-                                            {/* Date */}
+                                            {/* Description */}
+                                            <p className="text-sm text-muted-foreground line-clamp-2">
+                                                {exhibition.description}
+                                            </p>
+
+                                            {/* Theme */}
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <Building2 className="w-4 h-4" />
+                                                <span>{exhibition.theme}</span>
+                                            </div>
+
+                                            {/* Date Range */}
                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                 <Calendar className="w-4 h-4" />
-                                                <span>{new Date(exhibition.startDate).toLocaleDateString("ar")}</span>
-                                            </div>
-
-                                            {/* Capacity */}
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                <Users className="w-4 h-4 shrink-0" />
                                                 <span>
-                                                    0 / {exhibition.totalAvailableBooths} طاولة
+                                                    {new Date(exhibition.startDate).toLocaleDateString("en-US")} - {new Date(exhibition.endDate).toLocaleDateString("en-US")}
                                                 </span>
                                             </div>
 
-                                            {/* Deadline */}
+                                            {/* Time Duration */}
                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                <Clock className="w-4 h-4 shrink-0" />
-                                                <span className="text-xs">
-                                                    الموعد النهائي: {new Date(exhibition.finalizationDeadline).toLocaleDateString("ar")}
+                                                <Clock className="w-4 h-4" />
+                                                <span>
+                                                    {exhibition.startTime.substring(0, 5)} - {exhibition.endTime.substring(0, 5)}
                                                 </span>
                                             </div>
+
+                                            {/* Finalization Deadline (if exists) */}
+                                            {exhibition.finalizationDeadline && (
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                    <AlertCircle className="w-4 h-4" />
+                                                    <span>
+                                                        الموعد النهائي: {new Date(exhibition.finalizationDeadline).toLocaleDateString("en-US")}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {/* Actual Visitors (if exists) */}
+                                            {exhibition.actualVisitors !== null && (
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                    <Users className="w-4 h-4" />
+                                                    <span>
+                                                        الزوار الفعليون: {exhibition.actualVisitors.toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </CardContent>
 
                                         {/* Fixed footer - Next Action and Progress */}

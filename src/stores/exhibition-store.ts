@@ -7,6 +7,7 @@ interface ExhibitionStore {
     isLoading: boolean;
     error: string | null;
     fetchExhibitions: (orgId: number) => Promise<void>;
+    fetchAllExhibitions: () => Promise<void>;
     addExhibition: (exhibition: ExhibitionResponse) => void;
     clearExhibitions: () => void;
 }
@@ -23,6 +24,20 @@ export const useExhibitionStore = create<ExhibitionStore>((set) => ({
             set({ exhibitions, isLoading: false });
         } catch (error) {
             console.error('Failed to fetch exhibitions:', error);
+            set({
+                error: error instanceof Error ? error.message : 'فشل في تحميل المعارض',
+                isLoading: false
+            });
+        }
+    },
+
+    fetchAllExhibitions: async () => {
+        set({ isLoading: true, error: null });
+        try {
+            const exhibitions = await exhibitionService.getAllExhibitions();
+            set({ exhibitions, isLoading: false });
+        } catch (error) {
+            console.error('Failed to fetch all exhibitions:', error);
             set({
                 error: error instanceof Error ? error.message : 'فشل في تحميل المعارض',
                 isLoading: false

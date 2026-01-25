@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useVenueStore } from "@/stores/venue-store";
 import { useMunicipalityStore } from "@/stores/municipality-store";
+import { useVenueRequestStore } from "@/stores/venue-request-store";
 import { venueRequestService } from "@/services/venue-request-service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +18,11 @@ import {
     Maximize2,
     Loader2,
     Building2,
-    CheckCircle2
+    CheckCircle2,
+    AlertCircle
 } from "lucide-react";
 import { formatRentalFee, formatSpace, getAvailabilityLabel, getAvailabilityBadgeClass } from "@/types/venue";
+import { VenueRequestStatusLabels, getVenueRequestStatusBadgeClass, type VenueRequestStatus } from "@/types/municipality";
 import VenueRegistrationDialog from "@/components/exhibition/venue-registration-dialog";
 
 export default function RequestVenue() {
@@ -27,6 +31,7 @@ export default function RequestVenue() {
     const { id: exhibitionId } = useParams();
     const { venues, isLoading, error, selectedVenueId, fetchVenuesByMunicipality, setSelectedVenue } = useVenueStore();
     const { selectedMunicipalityId } = useMunicipalityStore();
+    const { venueRequests, fetchVenueRequests } = useVenueRequestStore();
     const [searchQuery, setSearchQuery] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -39,12 +44,28 @@ export default function RequestVenue() {
         if (municipalityId) {
             fetchVenuesByMunicipality(municipalityId);
         }
-    }, [municipalityId, fetchVenuesByMunicipality]);
+        if (exhibitionId) {
+            fetchVenueRequests(Number(exhibitionId));
+        }
+    }, [municipalityId, exhibitionId, fetchVenuesByMunicipality, fetchVenueRequests]);
 
     const filteredVenues = venues.filter(venue =>
         venue.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         venue.address.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    // Helper function to get venue request status
+    const getVenueRequestStatus = (venueId: number) => {
+        return venueRequests.find(req => req.venueId === venueId);
+    };
+
+    // Check if there's a pending request
+    const hasPendingRequest = venueRequests.some(req => req.status === 'PENDING');
+    const pendingRequest = venueRequests.find(req => req.status === 'PENDING');
+    
+    // Check if there's an approved request
+    const hasApprovedRequest = venueRequests.some(req => req.status === 'APPROVED');
+    const approvedRequest = venueRequests.find(req => req.status === 'APPROVED');
 
     const handleVenueSelect = (venueId: number) => {
         setSelectedVenue(venueId);
@@ -156,6 +177,28 @@ export default function RequestVenue() {
                 </p>
             </div>
 
+            {/* Approved Request Alert */}
+            {hasApprovedRequest && (
+                <Alert className="mb-6 border-green-500 bg-green-50 dark:bg-green-950">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <AlertTitle className="text-green-900 dark:text-green-100">تم قبول طلب المكان</AlertTitle>
+                    <AlertDescription className="text-green-800 dark:text-green-200">
+                        تم قبول طلبك للمكان "{approvedRequest?.venueName}". لا يمكنك تسجيل أماكن متعددة لنفس المعرض.
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {/* Pending Request Alert */}
+            {hasPendingRequest && (
+                <Alert className="mb-6 border-amber-500 bg-amber-50 dark:bg-amber-950">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <AlertTitle className="text-amber-900 dark:text-amber-100">في انتظار رد البلدية</AlertTitle>
+                    <AlertDescription className="text-amber-800 dark:text-amber-200">
+                        لديك طلب قيد المراجعة للمكان "{pendingRequest?.venueName}". لا يمكنك إرسال طلبات جديدة حتى ترد البلدية على طلبك الحالي.
+                    </AlertDescription>
+                </Alert>
+            )}
+
             {/* Search */}
             <div className="mb-6">
                 <div className="relative">
@@ -194,11 +237,15 @@ export default function RequestVenue() {
                         return (
                             <Card
                                 key={venue.id}
-                                className={`cursor-pointer transition-all duration-200 hover:shadow-lg overflow-hidden p-0 ${selectedVenueId === venue.id
+                                className={`transition-all duration-200 overflow-hidden p-0 ${
+                                    (hasPendingRequest || hasApprovedRequest)
+                                        ? "opacity-60 cursor-not-allowed" 
+                                        : "cursor-pointer hover:shadow-lg"
+                                } ${selectedVenueId === venue.id
                                     ? "border-primary border-2 bg-primary/5"
                                     : "hover:border-primary/50"
                                     }`}
-                                onClick={() => handleVenueSelect(venue.id)}
+                                onClick={() => !(hasPendingRequest || hasApprovedRequest) && handleVenueSelect(venue.id)}
                             >
                                 {/* Image */}
                                 <div className="relative h-40 overflow-hidden">
@@ -207,12 +254,20 @@ export default function RequestVenue() {
                                         alt={venue.name}
                                         className="w-full h-full object-cover"
                                     />
-                                    <div className="absolute top-2 right-2">
+                                    <div className="absolute top-2 right-2 flex flex-col gap-1">
                                         <Badge
                                             className={`${getAvailabilityBadgeClass(venue.available)}`}
                                         >
                                             {getAvailabilityLabel(venue.available)}
                                         </Badge>
+                                        {getVenueRequestStatus(venue.id) && (
+                                            <Badge
+                                                variant="outline"
+                                                className={`${getVenueRequestStatusBadgeClass(getVenueRequestStatus(venue.id)!.status as VenueRequestStatus)}`}
+                                            >
+                                                {VenueRequestStatusLabels[getVenueRequestStatus(venue.id)!.status as VenueRequestStatus]}
+                                            </Badge>
+                                        )}
                                     </div>
                                     {selectedVenueId === venue.id && (
                                         <div className="absolute top-2 left-2">
@@ -253,12 +308,24 @@ export default function RequestVenue() {
                                         variant={selectedVenueId === venue.id ? "default" : "outline"}
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleVenueSelect(venue.id);
-                                            handleRegisterClick(venue.id);
+                                            if (!(hasPendingRequest || hasApprovedRequest)) {
+                                                handleVenueSelect(venue.id);
+                                                handleRegisterClick(venue.id);
+                                            }
                                         }}
-                                        disabled={!venue.available || isSubmitting}
+                                        disabled={!venue.available || isSubmitting || !!getVenueRequestStatus(venue.id) || hasPendingRequest || hasApprovedRequest}
                                     >
-                                        {isSubmitting ? "جاري التسجيل..." : venue.available ? "تسجيل" : "غير متاح"}
+                                        {isSubmitting 
+                                            ? "جاري التسجيل..." 
+                                            : hasApprovedRequest
+                                            ? "مكان مسجل بالفعل"
+                                            : hasPendingRequest
+                                            ? "في انتظار الرد"
+                                            : getVenueRequestStatus(venue.id)
+                                            ? "تم التسجيل"
+                                            : venue.available 
+                                            ? "تسجيل" 
+                                            : "غير متاح"}
                                     </Button>
                                 </CardContent>
                             </Card>

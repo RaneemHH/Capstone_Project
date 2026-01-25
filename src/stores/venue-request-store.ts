@@ -8,20 +8,22 @@ interface VenueRequestStore {
     venueRequests: VenueRequestResponse[];
     isLoading: boolean;
     error: string | null;
-    fetchVenueRequests: (exhibitionId: number) => Promise<void>;
+    fetchVenueRequests: (exhibitionId?: number) => Promise<void>;
     clearVenueRequests: () => void;
     reviewVenueRequest: (requestId: number, approve: boolean, responseText: string) => Promise<void>;
 }
 
-export const useVenueRequestStore = create<VenueRequestStore>((set, get) => ({
+export const useVenueRequestStore = create<VenueRequestStore>((set) => ({
     venueRequests: [],
     isLoading: false,
     error: null,
 
-    fetchVenueRequests: async (exhibitionId: number) => {
+    fetchVenueRequests: async (exhibitionId?: number) => {
         set({ isLoading: true, error: null });
         try {
-            const requests = await venueRequestService.getRequestsForVenue(exhibitionId);
+            const requests = exhibitionId 
+                ? await venueRequestService.getRequestsForVenue(exhibitionId)
+                : await venueRequestService.getAllRequests();
             set({ venueRequests: requests, isLoading: false });
         } catch (error) {
             console.error('Failed to fetch venue requests:', error);

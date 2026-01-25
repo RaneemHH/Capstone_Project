@@ -37,6 +37,10 @@ export function Sidebar({
   const { roles } = useAuthStore();
   const location = useLocation();
   const isOrgOwner = roles.includes("ORG_OWNER");
+  const isActivityProvider = roles.includes("ACTIVITY_PROVIDER");
+  const isMunicipalityAdmin = roles.includes("MUNICIPALITY_ADMIN");
+  const isUniversityAdmin = roles.includes("UNIVERSITY_ADMIN");
+  const isSchoolAdmin = roles.includes("SCHOOL_ADMIN");
 
   // Org Owner menu items
   const orgOwnerMenuItems: MenuItem[] = [
@@ -86,7 +90,20 @@ export function Sidebar({
     },
   ];
 
-  const menuItems = isOrgOwner ? orgOwnerMenuItems : studentMenuItems;
+  // Limited menu items for Activity Provider, Municipality Admin, and University Admin
+  const limitedMenuItems: MenuItem[] = [
+    {
+      icon: LayoutDashboard,
+      label: "لوحة التحكم",
+      route: "/dashboard",
+    },
+  ];
+
+  const menuItems = isActivityProvider || isMunicipalityAdmin || isUniversityAdmin || isSchoolAdmin
+    ? limitedMenuItems 
+    : isOrgOwner 
+    ? orgOwnerMenuItems 
+    : studentMenuItems;
 
   return (
     <TooltipProvider delayDuration={300}>

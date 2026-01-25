@@ -26,7 +26,7 @@ export function DashboardLayout({
           {header}
 
           {/* Main Content */}
-          <main className="flex-1 overflow-y-auto bg-background">
+          <main className="flex-1 overflow-y-auto bg-background scrollbar-hide">
             {children}
           </main>
         </div>

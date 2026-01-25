@@ -1,7 +1,8 @@
 import Lottie from "lottie-react";
-import Animation2 from "@/assets/animations/Search.json";
 import Animation1 from "@/assets/animations/loading_place.json";
-import Animation3 from "@/assets/animations/Love_Emoji.json";
+import Animation2 from "@/assets/animations/Search.json";
+import Animation3 from "@/assets/animations/exhibition_review.json";
+import Animation4 from "@/assets/animations/Love_Emoji.json";
 
 interface ExhibitionRightPanelProps {
     currentStep: number;
@@ -28,9 +29,16 @@ export default function ExhibitionRightPanel({ currentStep }: ExhibitionRightPan
             case 3:
                 return {
                     stepLabel: "الخطوة 3",
-                    title: "تفاصيل المعرض",
-                    description: "أدخل التفاصيل الأساسية للمعرض مثل التاريخ والوقت والوصف والمتطلبات الخاصة.",
-                    didYouKnow: "المعارض التي تحتوي على وصف تفصيلي وواضح تحصل على معدل موافقة أعلى من البلديات."
+                    title: "التأكيد والجدولة",
+                    description: "راجع الملخص المالي والجدول الزمني للمعرض. تأكد من تأكيد جميع التفاصيل قبل البدء.",
+                    didYouKnow: "يتم حساب الإيرادات والمصروفات تلقائياً بناءً على رسوم الجامعات وتكاليف مقدمي الأنشطة."
+                };
+            case 4:
+                return {
+                    stepLabel: "الخطوة 4",
+                    title: "التعليقات والتقييم",
+                    description: "بعد انتهاء المعرض، يمكنك مراجعة التعليقات والتقييمات من المشاركين.",
+                    didYouKnow: "التعليقات والتقييمات تساعد في تحسين تجربة المعارض المستقبلية."
                 };
 
             default:
@@ -54,8 +62,10 @@ export default function ExhibitionRightPanel({ currentStep }: ExhibitionRightPan
                 return Animation2;
             case 3:
                 return Animation3;
+            case 4:
+                return Animation4;
             default:
-                return Animation1;
+                return Animation4;
         }
     };
 

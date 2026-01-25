@@ -19,13 +19,9 @@ export interface ExhibitionRequest {
     endDate: string;
     startTime: string; // LocalTime format: HH:mm:ss
     endTime: string;
-    totalAvailableBooths: number;
     standardBoothSqm: number;
-    maxBoothsPerUniversity: number;
-    maxBoothsPerProvider: number;
     expectedVisitors: number;
     scheduleJson?: string;
-    finalizationDeadline: string; // LocalDateTime format: YYYY-MM-DDTHH:mm:ss
 }
 
 export interface ExhibitionResponse {
@@ -39,32 +35,29 @@ export interface ExhibitionResponse {
     endDate: string;
     startTime: string;
     endTime: string;
-    totalAvailableBooths: number;
     standardBoothSqm: number;
-    maxBoothsPerUniversity: number;
-    maxBoothsPerProvider: number;
     expectedVisitors: number;
     actualVisitors: number | null;
     scheduleJson: string | null;
     createdAt: string;
     updatedAt: string;
-    finalizationDeadline: string;
-}
-
-export interface BoothLimitsRequest {
-    maxBoothsPerUniversity: number;
-    maxBoothsPerProvider: number;
+    finalizationDeadline?: string;
 }
 
 export interface InvitationCapacityResponse {
-    // Add fields based on your backend DTO
-    maxBoothsPerUniversity: number;
-    maxBoothsPerProvider: number;
-    availableBooths: number;
+    maxUniversitiesToInvite: number;
+    maxProvidersToInvite: number;
+    remainingBooths: number;
 }
 
 export interface AvailableBoothsMap {
     [key: string]: number;
+}
+
+export interface ExhibitionFinancialResponse {
+    totalRevenue: number;
+    totalExpenses: number;
+    netProfit: number;
 }
 
 // Utility type for status labels in Arabic

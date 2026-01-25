@@ -32,6 +32,14 @@ class VenueRequestService {
         );
         return response.data;
     }
+
+    // ----------------- Get All Requests -----------------
+    async getAllRequests(): Promise<VenueRequestResponse[]> {
+        const response = await api.get<VenueRequestResponse[]>(
+            `/api/venue-requests/all`
+        );
+        return response.data;
+    }
 }
 
 // Export singleton instance

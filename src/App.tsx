@@ -27,6 +27,10 @@ import OrgOwnerExhibition from "./pages/org-owner-exhibition.tsx";
 import StudentExhibitions from "./pages/student-exhibitions.tsx";
 import RequestVenue from "./components/exhibition/request-venue.tsx";
 import MunicipalityDashboard from "./pages/municipality-dashboard.tsx";
+import UniversityDashboard from "./pages/university-dashboard.tsx";
+import ActivityProviderDashboard from "./pages/activity-provider-dashboard.tsx";
+import SchoolDashboard from "./pages/school-dashboard.tsx";
+import ExhibitionFeedback from "./pages/exhibition-feedback.tsx";
 
 function App() {
     const { accessToken, roles } = useAuthStore();
@@ -54,10 +58,23 @@ function App() {
                             [
                                 { index: true, element: <MunicipalityDashboard /> },
                             ]
+                        ) : roles[0] === "UNIVERSITY_ADMIN" ? (
+                            [
+                                { index: true, element: <UniversityDashboard /> },
+                            ]
+                        ) : roles[0] === "ACTIVITY_PROVIDER" ? (
+                            [
+                                { index: true, element: <ActivityProviderDashboard /> },
+                            ]
+                        ) : roles[0] === "SCHOOL_ADMIN" ? (
+                            [
+                                { index: true, element: <SchoolDashboard /> },
+                            ]
                         ) : roles[0] !== "ORG_OWNER" ? (
                             [
                                 { index: true, element: <UserHome /> },
                                 { path: "exhibitions", element: <StudentExhibitions /> },
+                                { path: "exhibitions/:id/feedback", element: <ExhibitionFeedback /> },
                                 { path: "analytics", element: <Analytics /> },
                                 { path: "attempts", element: <Attempts /> },
                                 { path: "tests/:testId/take/:attemptId", element: <TakeTest /> },
