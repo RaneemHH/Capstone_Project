@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { useAuthStore } from "@/stores/auth-store"
 import { useUserProfileStore } from "@/stores/user-profile-store"
-
+import Animation from "@/assets/animations/Man_remote_working.json"
+import  Lottie from "lottie-react"
 
 export function HeroSection() {
   const { roles } = useAuthStore()
@@ -37,6 +38,10 @@ export function HeroSection() {
               filter: "drop-shadow(0 20px 40px rgba(0, 0, 0, 0.12)) drop-shadow(0 8px 16px rgba(0, 0, 0, 0.08))",
             }}
           /> */}
+          <Lottie
+            animationData={Animation}
+            loop={true}
+          />
         </div>
       </CardContent>
     </Card>

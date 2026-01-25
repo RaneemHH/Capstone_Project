@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 import { UserAuthLoginForm } from "@/components/authentication/user-auth-login-form"
+import Lottie from 'lottie-react';
+import Animation from '@/assets/animations/Login.json';
 
 export function LoginAuthentication() {
     return (
@@ -33,6 +35,13 @@ export function LoginAuthentication() {
                             <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" />
                         </svg>
                         المركز الإسلامي للتوجيه
+                    </div>
+                    <div>
+                        <Lottie
+                            className="h-[500px]"
+                            animationData={Animation}
+                            loop={true}
+                        />
                     </div>
                     <div className="relative z-20 mt-auto pb-10">
                         <blockquote className="space-y-2">
