@@ -20,6 +20,20 @@ interface JwtResponse {
     refreshToken: string;
 }
 
+interface Role {
+    id: number;
+    code: string;
+    name: string;
+    description: string;
+}
+
+interface UserInfoResponseRaw {
+    id: number;
+    name: string;
+    email: string;
+    roles: Role[];
+}
+
 interface UserInfoResponse {
     id: number;
     name: string;
@@ -75,8 +89,14 @@ export const getAllUsers = async (page: number = 0, size: number = 10): Promise<
 
 // 6. Get User By ID - Fetch single user details
 export const getUserById = async (id: number): Promise<UserInfoResponse> => {
-    const res = await api.get(`/auth/users/${id}`);
-    return res.data;
+    const res = await api.get<UserInfoResponseRaw>(`/auth/users/${id}`);
+    const data = res.data;
+    
+    // Transform roles from objects to string array
+    return {
+        ...data,
+        roles: data.roles?.map(role => role.code) || []
+    };
 };
 
 // 7. Delete User - Remove user account (ADMIN only)

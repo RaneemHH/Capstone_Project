@@ -14,7 +14,7 @@ interface Role {
 }
 
 interface AccessTokenPayload {
-  roles: Role[];
+  roles: string[]; // JWT has roles as string array, not objects
   userId: number;
   sub: string;
   iat: number;
@@ -43,7 +43,7 @@ const initializeAuth = (): Pick<AuthState, 'accessTokenString' | 'refreshTokenSt
   if (isValidJWT(storedAccessToken)) {
     try {
       const decoded = jwtDecode<AccessTokenPayload>(storedAccessToken);
-      const roles = decoded.roles?.map(role => role.code) || [];
+      const roles = decoded.roles || [];
 
       // Fetch user profile on initialization
       useUserProfileStore.getState().fetchUserProfile(decoded.userId);
@@ -90,7 +90,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       const decoded = jwtDecode<AccessTokenPayload>(token);
-      const roles = decoded.roles?.map(role => role.code) || [];
+      const roles = decoded.roles || [];
 
       set({
         accessTokenString: token,

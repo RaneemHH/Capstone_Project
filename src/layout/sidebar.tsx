@@ -5,11 +5,11 @@ import {
   BarChart3,
   ClipboardList,
   Calendar,
+  DollarSign,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
@@ -55,6 +55,11 @@ export function Sidebar({
       route: "/dashboard/exhibitions",
     },
     {
+      icon: DollarSign,
+      label: "المساعدات المالية",
+      route: "/dashboard/financial-aid",
+    },
+    {
       icon: BarChart3,
       label: "الإحصائيات",
       route: "/dashboard/analytics",
@@ -79,10 +84,11 @@ export function Sidebar({
       route: "/dashboard/exhibitions",
     },
     {
-      icon: BarChart3,
-      label: "الإحصائيات",
-      route: "/dashboard/analytics",
+      icon: DollarSign,
+      label: "المساعدات المالية",
+      route: "/dashboard/financial-aid",
     },
+  
     {
       icon: ClipboardList,
       label: "محاولاتي",
@@ -213,35 +219,7 @@ export function Sidebar({
             })}
           </nav>
 
-          {/* Upgrade Card - Desktop */}
-          <Card
-          // className="bg-gradient-to-br from-accent/20 to-accent/30 border-0 mt-auto md:hidden lg:block"
-          >
-            <CardContent className="p-4">
-              <Button
-                variant="default"
-                className="w-full"
-                size="sm"
-              >
-                ترقية
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Tablet: Compact Upgrade Icon */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                className="max-md:hidden md:flex lg:hidden w-12 h-12 items-center justify-center bg-gradient-to-br from-accent/20 to-accent/30 rounded-xl text-2xl mt-4 hover:bg-accent/40"
-              >
-                🚀
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <p>ترقية</p>
-            </TooltipContent>
-          </Tooltip>
+         
         </div>
       </div>
     </TooltipProvider>

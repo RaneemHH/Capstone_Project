@@ -103,12 +103,6 @@ export default function ExhibitionRightPanel({ currentStep }: ExhibitionRightPan
                 <p className="text-xs text-muted-foreground leading-relaxed mb-6">
                     {stepInfo.didYouKnow}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                    أسئلة؟{" "}
-                    <a href="#" className="text-primary font-medium hover:underline">
-                        تواصل مع خدمة العملاء.
-                    </a>
-                </p>
             </div>
         </div>
     );
