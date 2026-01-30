@@ -56,41 +56,24 @@ export function OrgExhibitionFeedbackView({ exhibitionId }: OrgExhibitionFeedbac
     }
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div>
-                <h2 className="text-2xl font-bold">تقييمات المعرض</h2>
-                <p className="text-muted-foreground mt-1">
-                    آراء الطلاب حول المعرض
-                </p>
+        <div className="space-y-8">
+            {/* Centered Rating Display */}
+            <div className="flex flex-col items-center justify-center py-8">
+                <div className="text-7xl font-bold mb-4">
+                    {getAverageRating()}
+                </div>
+                <div className="flex items-center gap-1 mb-3">
+                    {getRatingStars(Math.round(parseFloat(getAverageRating())))}
+                </div>
+                <div className="text-muted-foreground text-sm">
+                    ({feedbacks.length} تقييمات)
+                </div>
             </div>
 
-            {/* Summary */}
-            <Card className="bg-primary/5">
-                <CardContent className="pt-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <div className="text-sm text-muted-foreground mb-1">
-                                إجمالي التقييمات
-                            </div>
-                            <div className="text-3xl font-bold">
-                                {feedbacks.length} تقييم
-                            </div>
-                        </div>
-                        <div className="text-center md:text-right">
-                            <div className="text-sm text-muted-foreground mb-1">
-                                متوسط التقييم
-                            </div>
-                            <div className="flex items-center gap-2 justify-center md:justify-start">
-                                <span className="text-4xl font-bold">
-                                    {getAverageRating()}
-                                </span>
-                                <Star className="w-8 h-8 fill-yellow-400 text-yellow-400" />
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Most Liked Comments Header */}
+            <div>
+                <h3 className="text-xl font-semibold">التعليقات الأكثر إعجاباً</h3>
+            </div>
 
             {/* Feedbacks List */}
             {feedbacks.length === 0 ? (
@@ -110,29 +93,33 @@ export function OrgExhibitionFeedbackView({ exhibitionId }: OrgExhibitionFeedbac
                     {feedbacks.map((feedback) => (
                         <Card key={feedback.id}>
                             <CardContent className="pt-6">
-                                <div className="space-y-3">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                                                <User className="w-6 h-6 text-primary" />
+                                <div className="space-y-4">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex items-start gap-3 flex-1">
+                                            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                                                <User className="w-6 h-6 text-muted-foreground" />
                                             </div>
-                                            <div>
-                                                <div className="font-semibold text-lg">
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-semibold">
                                                     {feedback.studentName}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">
-                                                    {new Date(feedback.createdAt).toLocaleDateString('en-US')}
+                                                    {new Date(feedback.createdAt).toLocaleDateString('en-US', {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric'
+                                                    })}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-1 flex-shrink-0">
                                             {getRatingStars(feedback.rating)}
                                         </div>
                                     </div>
                                     
                                     {feedback.comments && (
-                                        <div className="pr-14">
-                                            <p className="text-muted-foreground leading-relaxed">
+                                        <div>
+                                            <p className="text-sm text-muted-foreground leading-relaxed">
                                                 {feedback.comments}
                                             </p>
                                         </div>

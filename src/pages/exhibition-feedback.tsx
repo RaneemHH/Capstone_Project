@@ -103,8 +103,8 @@ export default function ExhibitionFeedback() {
 
     return (
         <div className="h-full overflow-y-auto scrollbar-hide">
-            <div className="space-y-6 p-4 md:p-6 lg:p-8">
-                {/* Header with Back Button */}
+            <div className="space-y-8 p-4 md:p-6 lg:p-8">
+                {/* Header with Back Button and Add Feedback */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Button
@@ -114,12 +114,9 @@ export default function ExhibitionFeedback() {
                         >
                             <ArrowRight className="w-5 h-5" />
                         </Button>
-                        <div>
-                            <h1 className="text-3xl font-bold">تقييمات المعرض</h1>
-                            {exhibition && (
-                                <p className="text-muted-foreground mt-1">{exhibition.title}</p>
-                            )}
-                        </div>
+                        {exhibition && (
+                            <h1 className="text-2xl font-bold">{exhibition.title}</h1>
+                        )}
                     </div>
 
                     {/* Add Feedback Button - only for ATTENDED students */}
@@ -134,32 +131,23 @@ export default function ExhibitionFeedback() {
                     )}
                 </div>
 
-                {/* Summary */}
-                <Card className="bg-primary/5">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className="text-sm text-muted-foreground mb-1">
-                                    إجمالي التقييمات
-                                </div>
-                                <div className="text-2xl font-bold">
-                                    {feedbacks.length} تقييم
-                                </div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-sm text-muted-foreground mb-1">
-                                    متوسط التقييم
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-3xl font-bold">
-                                        {getAverageRating()}
-                                    </span>
-                                    <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                {/* Centered Rating Display */}
+                <div className="flex flex-col items-center justify-center py-8">
+                    <div className="text-7xl font-bold mb-4">
+                        {getAverageRating()}
+                    </div>
+                    <div className="flex items-center gap-1 mb-3">
+                        {getRatingStars(Math.round(parseFloat(getAverageRating())))}
+                    </div>
+                    <div className="text-muted-foreground text-sm">
+                        ({feedbacks.length} تقييمات)
+                    </div>
+                </div>
+
+                {/* Most Liked Comments Header */}
+                <div>
+                    <h3 className="text-xl font-semibold">التعليقات الأكثر إعجاباً</h3>
+                </div>
 
                 {/* Feedbacks List */}
                 {feedbacks.length === 0 ? (
@@ -179,28 +167,32 @@ export default function ExhibitionFeedback() {
                         {feedbacks.map((feedback) => (
                             <Card key={feedback.id}>
                                 <CardContent className="pt-6">
-                                    <div className="space-y-3">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                                    <User className="w-5 h-5 text-primary" />
+                                    <div className="space-y-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="flex items-start gap-3 flex-1">
+                                                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                                                    <User className="w-6 h-6 text-muted-foreground" />
                                                 </div>
-                                                <div>
+                                                <div className="flex-1 min-w-0">
                                                     <div className="font-semibold">
                                                         {feedback.studentName}
                                                     </div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {new Date(feedback.createdAt).toLocaleDateString('en-US')}
+                                                    <div className="text-sm text-muted-foreground">
+                                                        {new Date(feedback.createdAt).toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })}
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-1 flex-shrink-0">
                                                 {getRatingStars(feedback.rating)}
                                             </div>
                                         </div>
                                         
                                         {feedback.comments && (
-                                            <div className="pr-12">
+                                            <div>
                                                 <p className="text-sm text-muted-foreground leading-relaxed">
                                                     {feedback.comments}
                                                 </p>

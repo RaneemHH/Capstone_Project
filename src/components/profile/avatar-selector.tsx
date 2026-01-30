@@ -18,36 +18,20 @@ interface AvatarOption {
 
 const avatarOptions: Record<string, AvatarOption[]> = {
   student: [
-    { id: "student-1", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=student1&backgroundColor=b6e3f4", label: "طالب 1" },
-    { id: "student-2", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=student2&backgroundColor=ffd5dc", label: "طالب 2" },
-    { id: "student-3", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=student3&backgroundColor=c0aede", label: "طالب 3" },
-    { id: "student-4", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=student4&backgroundColor=ffdfbf", label: "طالب 4" },
-    { id: "student-5", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=student5&backgroundColor=a8e6cf", label: "طالب 5" },
-    { id: "student-6", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=student6&backgroundColor=fdcae1", label: "طالب 6" },
+    { id: "student-boy", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=happyboy&mouth=smile&eyes=happy&backgroundColor=b6e3f4", label: "طالب" },
+    { id: "student-girl", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=happygirl&mouth=smile&eyes=happy&backgroundColor=ffd5dc&hairColor=auburn", label: "طالبة" },
   ],
   teacher: [
-    { id: "teacher-1", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=teacher1&backgroundColor=89adff&accessories=prescription02", label: "معلم 1" },
-    { id: "teacher-2", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=teacher2&backgroundColor=bde4ff&accessories=prescription01", label: "معلم 2" },
-    { id: "teacher-3", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=teacher3&backgroundColor=ef7148&accessories=prescription02", label: "معلم 3" },
-    { id: "teacher-4", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=teacher4&backgroundColor=defc8e&accessories=sunglasses", label: "معلم 4" },
-    { id: "teacher-5", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=teacher5&backgroundColor=89adff", label: "معلم 5" },
-    { id: "teacher-6", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=teacher6&backgroundColor=bde4ff", label: "معلم 6" },
+    { id: "teacher-boy", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=teacherboy&mouth=smile&eyes=happy&accessories=prescription02&backgroundColor=89adff", label: "معلم" },
+    { id: "teacher-girl", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=teachergirl&mouth=smile&eyes=happy&accessories=prescription01&backgroundColor=bde4ff&hairColor=auburn", label: "معلمة" },
   ],
   manager: [
-    { id: "manager-1", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=manager1&backgroundColor=0f408f&accessories=prescription02&clothesColor=262e33", label: "مدير 1" },
-    { id: "manager-2", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=manager2&backgroundColor=89adff&accessories=prescription01&clothesColor=3c4f5c", label: "مدير 2" },
-    { id: "manager-3", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=manager3&backgroundColor=ef7148&accessories=prescription02&clothesColor=5199e4", label: "مدير 3" },
-    { id: "manager-4", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=manager4&backgroundColor=bde4ff&clothesColor=65c9ff", label: "مدير 4" },
-    { id: "manager-5", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=manager5&backgroundColor=0f408f", label: "مدير 5" },
-    { id: "manager-6", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=manager6&backgroundColor=89adff", label: "مدير 6" },
+    { id: "manager-boy", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=managerboy&mouth=smile&eyes=happy&accessories=prescription02&clothesColor=262e33&backgroundColor=ef7148", label: "مدير" },
+    { id: "manager-girl", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=managergirl&mouth=smile&eyes=happy&accessories=prescription01&clothesColor=3c4f5c&backgroundColor=defc8e&hairColor=auburn", label: "مديرة" },
   ],
   admin: [
-    { id: "admin-1", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin1&backgroundColor=ef7148&accessories=prescription02&clothesColor=262e33", label: "مسؤول 1" },
-    { id: "admin-2", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin2&backgroundColor=0f408f&accessories=prescription01&clothesColor=3c4f5c", label: "مسؤول 2" },
-    { id: "admin-3", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin3&backgroundColor=89adff&accessories=sunglasses&clothesColor=e6e6e6", label: "مسؤول 3" },
-    { id: "admin-4", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin4&backgroundColor=defc8e&clothesColor=5199e4", label: "مسؤول 4" },
-    { id: "admin-5", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin5&backgroundColor=ef7148", label: "مسؤول 5" },
-    { id: "admin-6", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin6&backgroundColor=bde4ff", label: "مسؤول 6" },
+    { id: "admin-boy", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=adminboy&mouth=smile&eyes=happy&accessories=prescription02&clothesColor=262e33&backgroundColor=ef7148", label: "مسؤول" },
+    { id: "admin-girl", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=admingirl&mouth=smile&eyes=happy&accessories=prescription01&clothesColor=3c4f5c&backgroundColor=0f408f&hairColor=auburn", label: "مسؤولة" },
   ],
 };
 
@@ -84,7 +68,7 @@ export function AvatarSelector({ currentAvatar, userRole, onAvatarSelect }: Avat
         <DialogHeader>
           <DialogTitle className="text-2xl text-center">اختر صورة رمزية</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-3 gap-4 py-4">
+        <div className="grid grid-cols-2 gap-4 py-4">
           {roleAvatars.map((avatar) => (
             <button
               key={avatar.id}

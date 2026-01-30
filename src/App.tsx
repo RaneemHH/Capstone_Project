@@ -31,6 +31,9 @@ import UniversityDashboard from "./pages/university-dashboard.tsx";
 import ActivityProviderDashboard from "./pages/activity-provider-dashboard.tsx";
 import SchoolDashboard from "./pages/school-dashboard.tsx";
 import ExhibitionFeedback from "./pages/exhibition-feedback.tsx";
+import FinancialAid from "./pages/financial-aid.tsx";
+import ApplyFinancialAid from "./pages/apply-financial-aid.tsx";
+import OrgFinancialAid from "./pages/org-financial-aid.tsx";
 
 function App() {
     const { accessToken, roles } = useAuthStore();
@@ -75,6 +78,8 @@ function App() {
                                 { index: true, element: <UserHome /> },
                                 { path: "exhibitions", element: <StudentExhibitions /> },
                                 { path: "exhibitions/:id/feedback", element: <ExhibitionFeedback /> },
+                                { path: "financial-aid", element: <FinancialAid /> },
+                                { path: "financial-aid/apply", element: <ApplyFinancialAid /> },
                                 { path: "analytics", element: <Analytics /> },
                                 { path: "attempts", element: <Attempts /> },
                                 { path: "tests/:testId/take/:attemptId", element: <TakeTest /> },
@@ -102,7 +107,8 @@ function App() {
                                     path: 'exhibitions/:id/venues',
                                     element: <RequestVenue />,
                                 },
-                                { path: 'analytics', element: <Analytics /> },
+                                { path: 'financial-aid', element: <OrgFinancialAid /> },
+                                // { path: 'analytics', element: <Analytics /> },
                                 { path: 'attempts', element: <Attempts /> },
                                 { path: ":attemptId/analyze-personality", element: <AnalyzePersonality /> },
 

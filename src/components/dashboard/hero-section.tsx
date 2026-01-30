@@ -1,7 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { useAuthStore } from "@/stores/auth-store"
 import { useUserProfileStore } from "@/stores/user-profile-store"
-import Animation from "@/assets/animations/Man_remote_working.json"
+import Animation_Org from "@/assets/animations/Man_remote_working.json"
+import Animation_Student from "@/assets/animations/idea_generation.json"
+
 import  Lottie from "lottie-react"
 
 export function HeroSection() {
@@ -14,7 +16,7 @@ export function HeroSection() {
   const greeting = isOrgOwner
     ? "جاهز لإدارة الاختبارات وتحليل النتائج؟"
     : "هل أنت مستعد لاكتشاف شخصيتك المهنية؟"
-
+  const Animation = isOrgOwner ? Animation_Org : Animation_Student
   return (
     <Card className="md:h-40 lg:h-50 bg-gradient-to-br from-secondary/30 via-secondary/50 to-primary/30 border-0 mb-8 shadow-sm overflow-visible">
       <CardContent className="relative p-10 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 min-h-[180px] md:min-h-[200px]">

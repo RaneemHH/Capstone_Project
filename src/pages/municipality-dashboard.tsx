@@ -140,31 +140,31 @@ export default function MunicipalityDashboard() {
     ];
 
     // Format date to Arabic
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('ar-SA', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    };
+    // const formatDate = (dateString: string) => {
+    //     const date = new Date(dateString);
+    //     return date.toLocaleDateString('ar-SA', {
+    //         year: 'numeric',
+    //         month: 'long',
+    //         day: 'numeric'
+    //     });
+    // };
 
-    const formatDateTime = (dateString: string | null) => {
-        if (!dateString) return "غير محدد";
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleString('ar-SA', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-            });
-        } catch {
-            return dateString;
-        }
-    };
+    // const formatDateTime = (dateString: string | null) => {
+    //     if (!dateString) return "غير محدد";
+    //     try {
+    //         const date = new Date(dateString);
+    //         return date.toLocaleString('ar-SA', {
+    //             year: 'numeric',
+    //             month: '2-digit',
+    //             day: '2-digit',
+    //             hour: '2-digit',
+    //             minute: '2-digit',
+    //             hour12: true
+    //         });
+    //     } catch {
+    //         return dateString;
+    //     }
+    // };
 
     return (
         <div className="bg-background p-6 flex flex-col min-h-screen lg:min-h-0 lg:h-[650px] lg:overflow-hidden" dir="rtl">
@@ -230,9 +230,7 @@ export default function MunicipalityDashboard() {
                                             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">اسم المكان</th>
                                             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">حالة المكان</th>
                                             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">الحالة</th>
-                                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">تاريخ الطلب</th>
                                             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">الموعد النهائي</th>
-                                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">تاريخ المراجعة</th>
                                             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">الإجراءات</th>
                                             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">التفاصيل</th>
                                         </tr>
@@ -263,13 +261,20 @@ export default function MunicipalityDashboard() {
                                                     </Badge>
                                                 </td>
                                                 <td className="py-4 px-4 text-sm text-muted-foreground">
-                                                    {formatDateTime(request.requestedAt)}
-                                                </td>
-                                                <td className="py-4 px-4 text-sm text-muted-foreground">
-                                                    {formatDateTime(request.responseDeadline)}
-                                                </td>
-                                                <td className="py-4 px-4 text-sm text-muted-foreground">
-                                                    {formatDateTime(request.reviewedAt)}
+                                                    {request.responseDeadline ? (() => {
+                                                        const date = new Date(request.responseDeadline);
+                                                        const dateStr = date.toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: '2-digit',
+                                                            day: '2-digit'
+                                                        });
+                                                        const timeStr = date.toLocaleTimeString('en-US', {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                            hour12: true
+                                                        });
+                                                        return `${dateStr} (${timeStr})`;
+                                                    })() : "غير محدد"}
                                                 </td>
                                              
                                                 <td className="py-4 px-4">
@@ -421,7 +426,11 @@ export default function MunicipalityDashboard() {
                         <div>
                             <h4 className="text-sm font-semibold text-foreground mb-1">تاريخ الإنشاء</h4>
                             <p className="text-sm text-muted-foreground">
-                                {selectedRequest && formatDate(selectedRequest.requestedAt)}
+                                {selectedRequest && new Date(selectedRequest.requestedAt).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                })}
                             </p>
                         </div>
                         <div>

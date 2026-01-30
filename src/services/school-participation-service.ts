@@ -8,7 +8,7 @@ import type {
 
 /**
  * School Participation Service
- * Handles all school participation workflow operations
+ * Handles all schools participation workflow operations
  */
 export const schoolParticipationService = {
     /**

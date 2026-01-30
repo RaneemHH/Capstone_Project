@@ -171,7 +171,7 @@ export default function BaseTest() {
     };
 
     return (
-        <div className="container mx-auto max-w-7xl">
+        <div className="container mx-auto max-w-7xl p-4 md:p-6 lg:p-8">
             <div className="mb-6">
                 {/* <h1 className="text-3xl font-bold text-foreground">
                     تفاصيل الاختبار الأساسي  {baseTestId} 
@@ -208,68 +208,66 @@ export default function BaseTest() {
                                     className="w-52 cursor-pointer hover:shadow-lg transition-shadow border-2 rounded-lg relative overflow-hidden bg-card"
                                     onClick={() => handleOpenDocument(doc.id)}
                                 >
-                                    {/* 3-dot menu */}
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="absolute top-2 right-2 h-8 w-8 bg-white/80 hover:bg-white z-10"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="start" dir="rtl">
-                                            <DropdownMenuItem
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleOpenDocument(doc.id);
-                                                }}
-                                                className="cursor-pointer"
-                                            >
-                                                <span>فتح في نافذة جديدة</span>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeleteDocument(doc.id);
-                                                }}
-                                                className="cursor-pointer text-destructive hover:text-destructive-foreground hover:bg-destructive"
-                                            >
-                                                <span>حذف</span>
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-
-                                    {/* Document preview thumbnail - full width */}
-                                    <div className="bg-muted h-64 flex items-center justify-center border-b">
-                                        <FileText className="w-20 h-20 text-muted-foreground" />
-                                    </div>
                                     {/* Document info */}
                                     <div className="p-3 space-y-1">
-                                        <div className="flex items-start gap-2">
-                                            {isPdf ? (
-                                                <div className="w-5 h-5 bg-red-500 rounded flex items-center justify-center flex-shrink-0">
-                                                    <span className="text-white text-xs font-bold">P</span>
+                                        <div className="flex items-start gap-2 justify-between">
+                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                {isPdf ? (
+                                                    <div className="w-6 h-6 bg-red-500 rounded flex items-center justify-center flex-shrink-0">
+                                                        <span className="text-white text-xs font-bold">P</span>
+                                                    </div>
+                                                ) : isWord ? (
+                                                    <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center flex-shrink-0">
+                                                        <span className="text-white text-xs font-bold">W</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center flex-shrink-0">
+                                                        <FileText className="w-3 h-3 text-white" />
+                                                    </div>
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="font-medium text-sm truncate" title={doc.originalFilename}>
+                                                        {doc.originalFilename}
+                                                    </h3>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Opened {new Date(doc.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                    </p>
                                                 </div>
-                                            ) : isWord ? (
-                                                <div className="w-5 h-5 bg-blue-600 rounded flex items-center justify-center flex-shrink-0">
-                                                    <span className="text-white text-xs font-bold">W</span>
-                                                </div>
-                                            ) : (
-                                                <div className="w-5 h-5 bg-blue-500 rounded flex items-center justify-center flex-shrink-0">
-                                                    <FileText className="w-3 h-3 text-white" />
-                                                </div>
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="font-medium text-sm truncate" title={doc.originalFilename}>
-                                                    {doc.originalFilename}
-                                                </h3>
-                                                <p className="text-xs text-muted-foreground">
-                                                    Opened {new Date(doc.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                </p>
                                             </div>
+                                            
+                                            {/* 3-dot menu */}
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 hover:bg-muted flex-shrink-0"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="start" dir="rtl">
+                                                    <DropdownMenuItem
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleOpenDocument(doc.id);
+                                                        }}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        <span>فتح في نافذة جديدة</span>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteDocument(doc.id);
+                                                        }}
+                                                        className="cursor-pointer text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                                                    >
+                                                        <span>حذف</span>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </div>
                                 </div>

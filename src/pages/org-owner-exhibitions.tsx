@@ -379,11 +379,6 @@ export default function OrgOwnerExhibitions() {
 
                                         {/* Main content - flexible */}
                                         <CardContent className="space-y-3 flex-1">
-                                            {/* Description */}
-                                            <p className="text-sm text-muted-foreground line-clamp-2">
-                                                {exhibition.description}
-                                            </p>
-
                                             {/* Theme */}
                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                 <Building2 className="w-4 h-4" />
@@ -432,9 +427,13 @@ export default function OrgOwnerExhibitions() {
                                             <div className="pt-2 border-t border-primary">
                                                 <div className="flex items-center justify-between text-sm mb-2">
                                                     <span className="text-muted-foreground"> التالي: {nextAction}</span>
-                                                    <span className="font-medium text-xs">{currentStep} / 4</span>
                                                 </div>
-                                                <Progress value={progress} className="h-2" />
+                                                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                                    <div 
+                                                        className="h-full bg-primary transition-all duration-300 origin-right" 
+                                                        style={{ width: `${progress}%` }}
+                                                    />
+                                                </div>
                                             </div>
                                         </CardContent>
                                     </Card>
