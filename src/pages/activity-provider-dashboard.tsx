@@ -8,7 +8,25 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +37,9 @@ import { activityService } from "@/services/activity-service";
 import type { ActivityProviderRequestStatus, ActivityProviderRequestResponse } from "@/types/activity-provider";
 import type { ActivityResponse } from "@/types/activity";
 import { getActivityTypeLabel } from "@/types/activity";
+
+// ... previous imports
+
 
 // Helper function to get status label in Arabic
 const getStatusLabel = (status: ActivityProviderRequestStatus): string => {
@@ -64,9 +85,15 @@ export default function ActivityProviderDashboard() {
         fetchProvidersByOwnerId,
         fetchRequestsByProviderId
     } = useActivityProviderStore();
-    
+
     const [expandedProviders, setExpandedProviders] = useState<Set<number>>(new Set());
     const [proposeDialogOpen, setProposeDialogOpen] = useState(false);
+
+    // Cancellation Dialog State
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [requestToCancel, setRequestToCancel] = useState<ActivityProviderRequestResponse | null>(null);
+    const [cancellationReason, setCancellationReason] = useState("");
+    const [isCancelling, setIsCancelling] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<ActivityProviderRequestResponse | null>(null);
     const [proposalText, setProposalText] = useState<string>('');
     const [proposedBoothsCount, setProposedBoothsCount] = useState<number>(1);
@@ -191,10 +218,10 @@ export default function ActivityProviderDashboard() {
                     activityIds: selectedActivityIds
                 }
             );
-            
+
             toast.success('تم تقديم الاقتراح بنجاح');
             setProposeDialogOpen(false);
-            
+
             // Refresh requests
             if (selectedRequest.providerId) {
                 fetchRequestsByProviderId(selectedRequest.providerId);
@@ -207,6 +234,58 @@ export default function ActivityProviderDashboard() {
         }
     };
 
+    const handleOpenCancelDialog = (request: ActivityProviderRequestResponse) => {
+        setRequestToCancel(request);
+        setCancellationReason("");
+        setCancelDialogOpen(true);
+    };
+
+    const handleCancelRequest = async () => {
+        if (!requestToCancel) return;
+
+        if (!cancellationReason.trim()) {
+            toast.error('يرجى ذكر سبب الإلغاء');
+            return;
+        }
+
+        setIsCancelling(true);
+        try {
+            await activityProviderService.cancelRequest(requestToCancel.id, cancellationReason);
+            toast.success('تم إلغاء المشاركة بنجاح');
+
+            // Refresh requests
+            if (requestToCancel.providerId) {
+                fetchRequestsByProviderId(requestToCancel.providerId);
+            }
+            setCancelDialogOpen(false);
+        } catch (error) {
+            console.error('Failed to cancel request:', error);
+
+            let errorMessage = 'فشل في إلغاء المشاركة';
+
+            if (error && typeof error === 'object') {
+                const axiosError = error as {
+                    response?: {
+                        data?: { message?: string; error?: string; };
+                    };
+                    message?: string;
+                };
+
+                if (axiosError.response?.data?.message) {
+                    errorMessage = axiosError.response.data.message;
+                } else if (axiosError.response?.data?.error) {
+                    errorMessage = axiosError.response.data.error;
+                } else if (axiosError.message) {
+                    errorMessage = axiosError.message;
+                }
+            }
+
+            toast.error(errorMessage);
+        } finally {
+            setIsCancelling(false);
+            setRequestToCancel(null);
+        }
+    };
     const handleFinalizeRequest = async (request: ActivityProviderRequestResponse) => {
         // Get exhibition details
         const exhibition = exhibitions.find(e => e.id === request.exhibitionId);
@@ -223,24 +302,24 @@ export default function ActivityProviderDashboard() {
         try {
             await activityProviderService.finalizeParticipation(request.id);
             toast.success('تم إتمام المشاركة بنجاح');
-            
+
             // Refresh requests
             if (request.providerId) {
                 fetchRequestsByProviderId(request.providerId);
             }
         } catch (error) {
             console.error('Failed to finalize request:', error);
-            
+
             let errorMessage = 'فشل في إتمام المشاركة';
-            
+
             if (error && typeof error === 'object') {
-                const axiosError = error as { 
-                    response?: { 
+                const axiosError = error as {
+                    response?: {
                         data?: { message?: string; error?: string; };
-                    }; 
+                    };
                     message?: string;
                 };
-                
+
                 if (axiosError.response?.data?.message) {
                     errorMessage = axiosError.response.data.message;
                 } else if (axiosError.response?.data?.error) {
@@ -249,25 +328,10 @@ export default function ActivityProviderDashboard() {
                     errorMessage = axiosError.message;
                 }
             }
-            
+
             toast.error(errorMessage);
         } finally {
             setIsFinalizingRequest(false);
-        }
-    };
-
-    const handleConfirmParticipation = async (request: ActivityProviderRequestResponse) => {
-        try {
-            await activityProviderService.confirmParticipation(request.id);
-            toast.success('تم تأكيد المشاركة بنجاح');
-            
-            // Refresh requests
-            if (request.providerId) {
-                fetchRequestsByProviderId(request.providerId);
-            }
-        } catch (error) {
-            console.error('Failed to confirm participation:', error);
-            toast.error('فشل في تأكيد المشاركة');
         }
     };
 
@@ -305,11 +369,11 @@ export default function ActivityProviderDashboard() {
                                     {ownerProviders.map((provider) => {
                                         const isExpanded = expandedProviders.has(provider.id);
                                         const requests = providerRequests.get(provider.id) || [];
-                                        
+
                                         return (
                                             <Card key={provider.id} className="border-border">
                                                 {/* Provider Header */}
-                                                <div 
+                                                <div
                                                     className="p-4 cursor-pointer hover:bg-accent/5 transition-colors"
                                                     onClick={() => toggleProvider(provider.id)}
                                                 >
@@ -361,14 +425,14 @@ export default function ActivityProviderDashboard() {
                                                                                     <h4 className="font-medium text-foreground text-lg">
                                                                                         {getExhibitionName(request.exhibitionId)}
                                                                                     </h4>
-                                                                                    <Badge 
-                                                                                        variant="outline" 
+                                                                                    <Badge
+                                                                                        variant="outline"
                                                                                         className={getStatusColor(request.status)}
                                                                                     >
                                                                                         {getStatusLabel(request.status)}
                                                                                     </Badge>
                                                                                 </div>
-                                                                                
+
                                                                                 <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                                                                                     {request.invitedAt && (
                                                                                         <div className="text-muted-foreground">
@@ -378,7 +442,7 @@ export default function ActivityProviderDashboard() {
                                                                                     )}
                                                                                     <div className="text-muted-foreground">
                                                                                         <span className="font-medium">الموعد النهائي للرد: </span>
-                                                                                        {request.responseDeadline 
+                                                                                        {request.responseDeadline
                                                                                             ? new Date(request.responseDeadline).toLocaleDateString('en-US')
                                                                                             : 'غير محدد'
                                                                                         }
@@ -417,9 +481,9 @@ export default function ActivityProviderDashboard() {
 
                                                                                 {request.status === 'INVITED' && (
                                                                                     <>
-                                                                                        <Button 
-                                                                                            size="sm" 
-                                                                                            className="mt-2"
+                                                                                        <Button
+                                                                                            size="sm"
+                                                                                            className="mt-2 w-full"
                                                                                             onClick={() => openProposeDialog(request)}
                                                                                             disabled={isDeadlinePassed(request.responseDeadline)}
                                                                                         >
@@ -433,6 +497,7 @@ export default function ActivityProviderDashboard() {
                                                                                     </>
                                                                                 )}
 
+
                                                                                 {request.status === 'APPROVED' && (() => {
                                                                                     let confirmationDeadline = null;
                                                                                     if (request.orgResponse) {
@@ -440,28 +505,59 @@ export default function ActivityProviderDashboard() {
                                                                                             const parsed = JSON.parse(request.orgResponse);
                                                                                             confirmationDeadline = parsed.confirmationDeadline;
                                                                                         } catch (error) {
-                                                                                            // If orgResponse is not valid JSON, it might be a plain string
-                                                                                            // In that case, there's no confirmationDeadline
                                                                                             console.warn('Failed to parse orgResponse as JSON:', error);
                                                                                         }
                                                                                     }
-                                                                                    const isConfirmDeadlinePassed = confirmationDeadline 
+                                                                                    const isConfirmDeadlinePassed = confirmationDeadline
                                                                                         ? isDeadlinePassed(confirmationDeadline)
                                                                                         : false;
 
+                                                                                    // Check for exhibition status for cancel button visibility
+                                                                                    const exhibition = exhibitions.find(e => e.id === request.exhibitionId);
+                                                                                    const isExhibitionConfirmed = exhibition?.status === 'CONFIRMED';
+                                                                                    const isExhibitionActiveOrCompleted = exhibition?.status === 'ACTIVE' || exhibition?.status === 'COMPLETED';
+
                                                                                     return (
                                                                                         <>
-                                                                                            <Button 
-                                                                                                size="sm" 
-                                                                                                className="mt-2"
-                                                                                                onClick={() => handleConfirmParticipation(request)}
-                                                                                                disabled={isConfirmDeadlinePassed}
-                                                                                            >
-                                                                                                تأكيد المشاركة
-                                                                                            </Button>
+                                                                                            <div className="flex items-center gap-2 mt-2">
+                                                                                                <Button
+                                                                                                    size="sm"
+                                                                                                    className="flex-1"
+                                                                                                    onClick={() => handleFinalizeRequest(request)}
+                                                                                                    disabled={isConfirmDeadlinePassed || !isExhibitionConfirmed || isFinalizingRequest}
+                                                                                                >
+                                                                                                    {isFinalizingRequest ? (
+                                                                                                        <>
+                                                                                                            <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                                                                                                            جاري...
+                                                                                                        </>
+                                                                                                    ) : !isExhibitionConfirmed ? (
+                                                                                                        'المعرض غير مؤكد'
+                                                                                                    ) : (
+                                                                                                        'إتمام المشاركة'
+                                                                                                    )}
+                                                                                                </Button>
+
+                                                                                                {!isExhibitionActiveOrCompleted && (
+                                                                                                    <Button
+                                                                                                        variant="ghost"
+                                                                                                        size="sm"
+                                                                                                        className="text-accent hover:text-red-700 hover:bg-red-50"
+                                                                                                        onClick={() => handleOpenCancelDialog(request)}
+                                                                                                    >
+                                                                                                        إلغاء
+                                                                                                    </Button>
+                                                                                                )}
+                                                                                            </div>
+
                                                                                             {isConfirmDeadlinePassed && (
                                                                                                 <p className="text-xs text-red-600 mt-1">
                                                                                                     انتهى الموعد النهائي للتأكيد
+                                                                                                </p>
+                                                                                            )}
+                                                                                            {!isExhibitionConfirmed && !isConfirmDeadlinePassed && (
+                                                                                                <p className="text-xs text-muted-foreground mt-1">
+                                                                                                    انتظر حتى يتم تأكيد المعرض لإتمام المشاركة
                                                                                                 </p>
                                                                                             )}
                                                                                         </>
@@ -473,25 +569,40 @@ export default function ActivityProviderDashboard() {
                                                                                     const isExhibitionConfirmed = exhibition?.status === 'CONFIRMED';
                                                                                     const canFinalize = request.status === 'CONFIRMED';
 
+                                                                                    const isExhibitionActiveOrCompleted = exhibition?.status === 'ACTIVE' || exhibition?.status === 'COMPLETED';
+
                                                                                     return (
                                                                                         <>
-                                                                                            <Button 
-                                                                                                size="sm" 
-                                                                                                className="mt-2"
-                                                                                                onClick={() => handleFinalizeRequest(request)}
-                                                                                                disabled={!canFinalize || isFinalizingRequest}
-                                                                                            >
-                                                                                                {isFinalizingRequest ? (
-                                                                                                    <>
-                                                                                                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                                                                                                        جاري...
-                                                                                                    </>
-                                                                                                ) : !isExhibitionConfirmed ? (
-                                                                                                    'المعرض غير مؤكد'
-                                                                                                ) : (
-                                                                                                    'إتمام المشاركة'
+                                                                                            <div className="flex items-center gap-2 mt-2">
+                                                                                                <Button
+                                                                                                    size="sm"
+                                                                                                    className="flex-1"
+                                                                                                    onClick={() => handleFinalizeRequest(request)}
+                                                                                                    disabled={!canFinalize || isFinalizingRequest}
+                                                                                                >
+                                                                                                    {isFinalizingRequest ? (
+                                                                                                        <>
+                                                                                                            <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                                                                                                            جاري...
+                                                                                                        </>
+                                                                                                    ) : !isExhibitionConfirmed ? (
+                                                                                                        'المعرض غير مؤكد'
+                                                                                                    ) : (
+                                                                                                        'إتمام المشاركة'
+                                                                                                    )}
+                                                                                                </Button>
+
+                                                                                                {!isExhibitionActiveOrCompleted && (
+                                                                                                    <Button
+                                                                                                        variant="ghost"
+                                                                                                        size="sm"
+                                                                                                        className="text-accent hover:text-red-700 hover:bg-red-50"
+                                                                                                        onClick={() => handleOpenCancelDialog(request)}
+                                                                                                    >
+                                                                                                        إلغاء
+                                                                                                    </Button>
                                                                                                 )}
-                                                                                            </Button>
+                                                                                            </div>
                                                                                             {!isExhibitionConfirmed && (
                                                                                                 <p className="text-xs text-muted-foreground mt-1">
                                                                                                     انتظر حتى يتم تأكيد المعرض
@@ -595,8 +706,8 @@ export default function ActivityProviderDashboard() {
                                 <div className="h-[200px] overflow-y-auto rounded-md border p-4">
                                     <div className="space-y-3">
                                         {activities
-                                            .filter(activity => 
-                                                selectedRequest && 
+                                            .filter(activity =>
+                                                selectedRequest &&
                                                 activity.provider.id === selectedRequest.providerId &&
                                                 activity.active
                                             )
@@ -631,13 +742,13 @@ export default function ActivityProviderDashboard() {
                                                     </div>
                                                 </div>
                                             ))}
-                                        {selectedRequest && activities.filter(a => 
+                                        {selectedRequest && activities.filter(a =>
                                             a.provider.id === selectedRequest.providerId && a.active
                                         ).length === 0 && (
-                                            <div className="text-sm text-muted-foreground text-center py-4">
-                                                لا توجد أنشطة متاحة لهذا المزود
-                                            </div>
-                                        )}
+                                                <div className="text-sm text-muted-foreground text-center py-4">
+                                                    لا توجد أنشطة متاحة لهذا المزود
+                                                </div>
+                                            )}
                                     </div>
                                 </div>
                             )}
@@ -701,6 +812,42 @@ export default function ActivityProviderDashboard() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Cancellation Confirmation Dialog */}
+            <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>هل أنت متأكد من رغبتك في إلغاء المشاركة؟</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            سيؤدي هذا إلى إلغاء طلبك بالكامل ولا يمكن التراجع عن هذا الإجراء.
+                            يرجى ذكر سبب الإلغاء أدناه.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="py-4">
+                        <Label htmlFor="cancelReason" className="mb-2 block">سبب الإلغاء *</Label>
+                        <Textarea
+                            id="cancelReason"
+                            placeholder="اكتب سبب الإلغاء هنا..."
+                            value={cancellationReason}
+                            onChange={(e) => setCancellationReason(e.target.value)}
+                            rows={3}
+                        />
+                    </div>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isCancelling}>تراجع</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleCancelRequest();
+                            }}
+                            disabled={isCancelling}
+                            className="bg-primary text-primary-foreground hover:bg-primary/80"
+                        >
+                            {isCancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : 'نعم، قم بالإلغاء'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

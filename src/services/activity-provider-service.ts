@@ -18,7 +18,7 @@ export const activityProviderService = {
     ): Promise<ActivityProviderRequestResponse> => {
         const params = new URLSearchParams();
         params.append('responseDeadline', request.responseDeadline);
-        
+
         const response = await api.post<ActivityProviderRequestResponse>(
             `${BASE_URL}/invite/${exhibitionId}/${providerId}?${params.toString()}`,
             request.orgRequirements,
@@ -56,7 +56,7 @@ export const activityProviderService = {
         if (request.comments) {
             params.append('comments', request.comments);
         }
-        
+
         const response = await api.post<ActivityProviderRequestResponse>(
             `${BASE_URL}/review/${requestId}?${params.toString()}`
         );
@@ -64,14 +64,14 @@ export const activityProviderService = {
     },
 
     // Provider confirms their participation
-    confirmParticipation: async (
-        requestId: number
-    ): Promise<ActivityProviderRequestResponse> => {
-        const response = await api.post<ActivityProviderRequestResponse>(
-            `${BASE_URL}/confirm/${requestId}`
-        );
-        return response.data;
-    },
+    // confirmParticipation: async (
+    //     requestId: number
+    // ): Promise<ActivityProviderRequestResponse> => {
+    //     const response = await api.post<ActivityProviderRequestResponse>(
+    //         `${BASE_URL}/confirm/${requestId}`
+    //     );
+    //     return response.data;
+    // },
 
     // Provider finalizes their participation
     finalizeParticipation: async (
@@ -90,7 +90,7 @@ export const activityProviderService = {
     ): Promise<ActivityProviderRequestResponse> => {
         const params = new URLSearchParams();
         params.append('reason', reason);
-        
+
         const response = await api.post<ActivityProviderRequestResponse>(
             `${BASE_URL}/${requestId}/cancel?${params.toString()}`
         );

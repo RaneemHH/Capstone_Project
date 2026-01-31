@@ -56,12 +56,11 @@ export function DataTable<TData, TValue>({
       columnVisibility,
       rowSelection,
     },
-    initialState: {
-      pagination: {
-        pageSize,
-      },
-    },
   });
+
+  React.useEffect(() => {
+    table.setPageSize(pageSize);
+  }, [pageSize, table]);
 
   const currentPage = table.getState().pagination.pageIndex;
   const totalPages = table.getPageCount();
@@ -127,7 +126,7 @@ export function DataTable<TData, TValue>({
 
       {/* Pagination */}
       <div className="flex items-center justify-between px-4 py-4">
-       
+
         <Button
           variant="ghost"
           size="sm"
@@ -150,11 +149,10 @@ export function DataTable<TData, TValue>({
                 variant={currentPage === page ? "default" : "ghost"}
                 size="sm"
                 onClick={() => table.setPageIndex(page as number)}
-                className={`w-8 h-8 p-0 ${
-                  currentPage === page
+                className={`w-8 h-8 p-0 ${currentPage === page
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground"
-                }`}
+                  }`}
               >
                 {String(Number(page) + 1).padStart(2, "0")}
               </Button>
@@ -171,7 +169,7 @@ export function DataTable<TData, TValue>({
           التالي
           <ChevronLeft className="h-4 w-4 mr-1" />
         </Button>
-       
+
       </div>
     </div>
   );

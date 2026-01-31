@@ -12,31 +12,26 @@ import {
 import { DataTable } from "@/components/attempts-table/data-table";
 import { columns } from "@/components/attempts/columns";
 import { useTestAttemptsStore } from "@/stores/test-attempts-store";
-import { getAllTestAttempts, getAttemptsByStudent } from "@/services/test-attempt.ts";
-import { useAuthStore } from "@/stores/auth-store.tsx"; // <-- import your auth store
-import { jwtDecode } from "jwt-decode";
+import { getAllTestAttempts, getAttemptsByStudent } from "@/services/test-attempt";
+import { useAuthStore } from "@/stores/auth-store";
+
 
 export default function Attempts() {
   const [pageSize, setPageSize] = useState("10");
   const { attempts, loading, error, setAttempts } = useTestAttemptsStore();
-  const { roles,accessToken } = useAuthStore(); // <-- get roles and user info
-let studentId: number | undefined = undefined;
-if (accessToken) {
-  try {
-    const decoded: any = jwtDecode(accessToken);
-    studentId = decoded.userId || decoded.id || decoded.sub || undefined;
-  } catch {
-    studentId = undefined;
+  const { roles, accessToken } = useAuthStore(); // <-- get roles and user info
+  let studentId: number | undefined = undefined;
+  if (accessToken) {
+    studentId = accessToken.userId;
   }
-}
   useEffect(() => {
     const fetchAttempts = async () => {
-      if (roles[0] === "ROLE_ADMIN") {
+      if (roles[0] === "ORG_OWNER") {
         const data = await getAllTestAttempts();
         setAttempts(data);
       } else {
         // Assuming user.id is the studentId
-        const data = await getAttemptsByStudent(studentId? studentId : 4);
+        const data = await getAttemptsByStudent(studentId ? studentId : 4);
         setAttempts(data);
       }
     };

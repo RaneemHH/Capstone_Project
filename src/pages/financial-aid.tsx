@@ -135,85 +135,76 @@ export default function FinancialAid() {
       </div>
 
       {/* Requests List */}
-      {/* <Card className="border-none"> */}
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div>
-                <CardTitle>طلباتي</CardTitle>
-                {/* <CardDescription>جميع طلبات المساعدة المالية الخاصة بك</CardDescription> */}
-              </div>
-             
-            </div>
-            <Button onClick={() => navigate("/dashboard/financial-aid/apply")}>
-              <Plus className="w-4 h-4 ml-2" />
-              طلب مساعدة مالية
-            </Button>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">طلباتي</h2>
+          <Button onClick={() => navigate("/dashboard/financial-aid/apply")}>
+            <Plus className="w-4 h-4 ml-2" />
+            طلب مساعدة مالية
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
+        ) : requests.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            لا توجد طلبات حتى الآن. قم بإنشاء طلب جديد للبدء.
           </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
-          ) : requests.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              لا توجد طلبات حتى الآن. قم بإنشاء طلب جديد للبدء.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {requests.map((request) => (
-                <div key={request.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-card border rounded-lg hover:shadow-sm transition-shadow">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6 flex-1 w-full">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col gap-1 mb-1">
-                        <span>{getStatusBadge(request.status)}</span>
-                        <h3 className="font-semibold text-sm break-words whitespace-pre-line max-w-xs sm:max-w-xs md:max-w-sm lg:max-w-md xl:max-w-lg 2xl:max-w-xl">{request.reason}</h3>
-                      </div>
-                    </div>
-                    {/* Dates only visible on large screens */}
-                    <div className="hidden lg:flex items-center gap-6 text-xs">
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-muted-foreground font-normal">تاريخ الطلب</span>
-                        <span className="font-bold text-foreground">
-                          {new Date(request.requestedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                        </span>
-                      </div>
-                      {request.reviewedAt && (
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="text-muted-foreground font-normal">تاريخ المراجعة</span>
-                          <span className="font-bold text-foreground">
-                            {new Date(request.reviewedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                          </span>
-                        </div>
-                      )}
+        ) : (
+          <div className="space-y-3">
+            {requests.map((request) => (
+              <div key={request.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-card border rounded-lg hover:shadow-sm transition-shadow">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6 flex-1 w-full">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col gap-1 mb-1">
+                      <span>{getStatusBadge(request.status)}</span>
+                      <h3 className="font-semibold text-sm break-words whitespace-pre-line max-w-xs sm:max-w-xs md:max-w-sm lg:max-w-md xl:max-w-lg 2xl:max-w-xl">{request.reason}</h3>
                     </div>
                   </div>
-                  
-                  <div className="flex gap-2 pr-5 pt-4 lg:pt-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleViewDetails(request)}
-                      className="h-8 bg-muted text-muted-foreground hover:bg-muted/80"
-                    >
-                      التفاصيل
-                    </Button>
-                    {request.status === "PENDING" && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleCancelRequest(request.id)}
-                        className="h-8"
-                      >
-                        إلغاء
-                      </Button>
+                  {/* Dates only visible on large screens */}
+                  <div className="hidden lg:flex items-center gap-6 text-xs">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-muted-foreground font-normal">تاريخ الطلب</span>
+                      <span className="font-bold text-foreground">
+                        {new Date(request.requestedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </span>
+                    </div>
+                    {request.reviewedAt && (
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-muted-foreground font-normal">تاريخ المراجعة</span>
+                        <span className="font-bold text-foreground">
+                          {new Date(request.reviewedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      {/* </Card> */}
+
+                <div className="flex gap-2 pr-5 pt-4 lg:pt-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleViewDetails(request)}
+                    className="h-8 bg-muted text-muted-foreground hover:bg-muted/80"
+                  >
+                    التفاصيل
+                  </Button>
+                  {request.status === "PENDING" && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleCancelRequest(request.id)}
+                      className="h-8"
+                    >
+                      إلغاء
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Details Dialog */}
       <RequestDetailsDialog

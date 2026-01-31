@@ -14,7 +14,28 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { universityParticipationService } from "@/services/university-participation-service";
+import { boothService } from "@/services/booth-service";
 import type { ParticipationStatus, UniversityParticipationResponse } from "@/types/university";
+import type { BoothResponse } from "@/types/booth";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { MapPin } from "lucide-react";
 
 // Helper function to get status label in Arabic
 const getStatusLabel = (status: ParticipationStatus): string => {
@@ -52,15 +73,15 @@ const isDeadlinePassed = (deadline: string | null | undefined): boolean => {
 
 export default function UniversityDashboard() {
     const { accessToken } = useAuthStore();
-    const { 
-        ownerUniversities, 
+    const {
+        ownerUniversities,
         universityParticipations,
         isLoadingOwnerUniversities,
         fetchUniversitiesByOwnerId,
-        fetchParticipationsByUniversityId 
+        fetchParticipationsByUniversityId
     } = useUniversityStore();
     const { exhibitions, fetchAllExhibitions } = useExhibitionStore();
-    
+
     const [expandedUniversities, setExpandedUniversities] = useState<Set<number>>(new Set());
     const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
     const [selectedParticipation, setSelectedParticipation] = useState<UniversityParticipationResponse | null>(null);
@@ -68,6 +89,15 @@ export default function UniversityDashboard() {
     const [boothContent, setBoothContent] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isFinalizingParticipation, setIsFinalizingParticipation] = useState(false);
+    const [boothsDialogOpen, setBoothsDialogOpen] = useState(false);
+    const [allocatedBooths, setAllocatedBooths] = useState<BoothResponse[]>([]);
+    const [isLoadingBooths, setIsLoadingBooths] = useState(false);
+    const [isCancellingParticipation, setIsCancellingParticipation] = useState(false);
+
+    // Cancellation Dialog State
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [participationToCancel, setParticipationToCancel] = useState<UniversityParticipationResponse | null>(null);
+
 
     // Fetch all exhibitions on mount
     useEffect(() => {
@@ -164,10 +194,10 @@ export default function UniversityDashboard() {
                     boothDetails
                 }
             );
-            
+
             toast.success('تم تسجيل المشاركة بنجاح');
             setRegisterDialogOpen(false);
-            
+
             // Refresh participations
             if (selectedParticipation.universityId) {
                 fetchParticipationsByUniversityId(selectedParticipation.universityId);
@@ -196,24 +226,24 @@ export default function UniversityDashboard() {
         try {
             await universityParticipationService.finalizeParticipation(participation.id);
             toast.success('تم إتمام المشاركة بنجاح');
-            
+
             // Refresh participations
             if (participation.universityId) {
                 fetchParticipationsByUniversityId(participation.universityId);
             }
         } catch (error) {
             console.error('Failed to finalize participation:', error);
-            
+
             let errorMessage = 'فشل في إتمام المشاركة';
-            
+
             if (error && typeof error === 'object') {
-                const axiosError = error as { 
-                    response?: { 
+                const axiosError = error as {
+                    response?: {
                         data?: { message?: string; error?: string; };
-                    }; 
+                    };
                     message?: string;
                 };
-                
+
                 if (axiosError.response?.data?.message) {
                     errorMessage = axiosError.response.data.message;
                 } else if (axiosError.response?.data?.error) {
@@ -222,10 +252,53 @@ export default function UniversityDashboard() {
                     errorMessage = axiosError.message;
                 }
             }
-            
+
             toast.error(errorMessage);
         } finally {
             setIsFinalizingParticipation(false);
+        }
+    };
+
+    const handleCancelParticipation = (participation: UniversityParticipationResponse) => {
+        setParticipationToCancel(participation);
+        setCancelDialogOpen(true);
+    };
+
+    const confirmCancellation = async () => {
+        if (!participationToCancel) return;
+
+        setIsCancellingParticipation(true);
+        try {
+            await universityParticipationService.cancelParticipation(participationToCancel.id);
+            toast.success('تم إلغاء المشاركة بنجاح');
+
+            // Refresh participations
+            if (participationToCancel.universityId) {
+                fetchParticipationsByUniversityId(participationToCancel.universityId);
+            }
+            setCancelDialogOpen(false);
+        } catch (error) {
+            console.error('Failed to cancel participation:', error);
+            toast.error('فشل في إلغاء المشاركة');
+        } finally {
+            setIsCancellingParticipation(false);
+            setParticipationToCancel(null);
+        }
+    };
+
+    const handleOpenBoothsDialog = async (participation: UniversityParticipationResponse) => {
+        setSelectedParticipation(participation);
+        setBoothsDialogOpen(true);
+        setIsLoadingBooths(true);
+        try {
+            const allBooths = await boothService.getBoothsByExhibition(participation.exhibitionId);
+            const myBooths = allBooths.filter(b => b.universityParticipationId === participation.id);
+            setAllocatedBooths(myBooths);
+        } catch (error) {
+            console.error('Failed to fetch booths:', error);
+            toast.error('فشل في تحميل بيانات الأكشاك');
+        } finally {
+            setIsLoadingBooths(false);
         }
     };
 
@@ -263,11 +336,11 @@ export default function UniversityDashboard() {
                                     {ownerUniversities.map((university) => {
                                         const isExpanded = expandedUniversities.has(university.id);
                                         const participations = universityParticipations.get(university.id) || [];
-                                        
+
                                         return (
                                             <Card key={university.id} className="border-border">
                                                 {/* University Header */}
-                                                <div 
+                                                <div
                                                     className="p-4 cursor-pointer hover:bg-accent/5 transition-colors"
                                                     onClick={() => toggleUniversity(university.id)}
                                                 >
@@ -319,52 +392,52 @@ export default function UniversityDashboard() {
                                                                                     <h4 className="font-medium text-foreground text-lg">
                                                                                         {getExhibitionName(participation.exhibitionId)}
                                                                                     </h4>
-                                                                                    <Badge 
-                                                                                        variant="outline" 
+                                                                                    <Badge
+                                                                                        variant="outline"
                                                                                         className={getStatusColor(participation.status)}
                                                                                     >
                                                                                         {getStatusLabel(participation.status)}
                                                                                     </Badge>
                                                                                 </div>
-                                                                                
+
                                                                                 <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                                                                                     {participation.invitedAt && (
                                                                                         <div className="text-muted-foreground">
                                                                                             <span className="font-medium">تاريخ الدعوة: </span>
-                                                                                            {new Date(participation.invitedAt).toLocaleDateString('ar-SA')}
+                                                                                            {new Date(participation.invitedAt).toLocaleDateString('en-US')}
                                                                                         </div>
                                                                                     )}
                                                                                     <div className="text-muted-foreground">
                                                                                         <span className="font-medium">الموعد النهائي للرد: </span>
-                                                                                        {participation.responseDeadline 
-                                                                                            ? new Date(participation.responseDeadline).toLocaleDateString('ar-SA')
+                                                                                        {participation.responseDeadline
+                                                                                            ? new Date(participation.responseDeadline).toLocaleDateString('en-US')
                                                                                             : 'غير محدد'
                                                                                         }
                                                                                     </div>
                                                                                     <div className="text-muted-foreground">
                                                                                         <span className="font-medium">تاريخ التسجيل: </span>
-                                                                                        {participation.registeredAt 
-                                                                                            ? new Date(participation.registeredAt).toLocaleDateString('ar-SA')
+                                                                                        {participation.registeredAt
+                                                                                            ? new Date(participation.registeredAt).toLocaleDateString('en-US')
                                                                                             : 'غير محدد'
                                                                                         }
                                                                                     </div>
                                                                                     <div className="text-muted-foreground">
                                                                                         <span className="font-medium">تاريخ التأكيد: </span>
-                                                                                        {participation.confirmedAt 
-                                                                                            ? new Date(participation.confirmedAt).toLocaleDateString('ar-SA')
+                                                                                        {participation.confirmedAt
+                                                                                            ? new Date(participation.confirmedAt).toLocaleDateString('en-US')
                                                                                             : 'غير محدد'
                                                                                         }
                                                                                     </div>
                                                                                     <div className="text-muted-foreground">
                                                                                         <span className="font-medium">عدد الأماكن: </span>
-                                                                                        {participation.approvedBoothsCount !== null 
-                                                                                            ? participation.approvedBoothsCount 
+                                                                                        {participation.approvedBoothsCount !== null
+                                                                                            ? participation.approvedBoothsCount
                                                                                             : 'غير محدد'
                                                                                         }
                                                                                     </div>
                                                                                     <div className="text-muted-foreground">
                                                                                         <span className="font-medium">رسوم المشاركة: </span>
-                                                                                        {participation.participationFee 
+                                                                                        {participation.participationFee
                                                                                             ? `$${participation.participationFee}`
                                                                                             : 'غير محدد'
                                                                                         }
@@ -375,30 +448,66 @@ export default function UniversityDashboard() {
                                                                                     </div>
                                                                                     <div className="text-muted-foreground">
                                                                                         <span className="font-medium">تاريخ الدفع: </span>
-                                                                                        {participation.paymentDate 
-                                                                                            ? new Date(participation.paymentDate).toLocaleDateString('ar-SA')
+                                                                                        {participation.paymentDate
+                                                                                            ? new Date(participation.paymentDate).toLocaleDateString('en-US')
                                                                                             : 'غير محدد'
                                                                                         }
                                                                                     </div>
                                                                                 </div>
 
-                                                                                {participation.status === 'INVITED' && (
-                                                                                    <>
-                                                                                        <Button 
-                                                                                            size="sm" 
-                                                                                            className="mt-2"
-                                                                                            onClick={() => openRegisterDialog(participation)}
-                                                                                            disabled={isDeadlinePassed(participation.responseDeadline)}
-                                                                                        >
-                                                                                            تسجيل المشاركة
-                                                                                        </Button>
-                                                                                        {isDeadlinePassed(participation.responseDeadline) && (
-                                                                                            <p className="text-xs text-red-600 mt-1">
-                                                                                                انتهى الموعد النهائي للتسجيل
-                                                                                            </p>
-                                                                                        )}
-                                                                                    </>
+                                                                                {participation.status === 'REGISTERED' && (
+                                                                                    <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                                                                                        <p className="text-sm font-bold text-purple-700 text-right">
+                                                                                            بانتظار المراجعة والقبول
+                                                                                        </p>
+                                                                                        <p className="text-xs text-purple-600 mt-1 text-right">
+                                                                                            لقد تم تسجيل مشاركتك بنجاح، وهي الآن قيد المراجعة من قبل منظم المعرض.
+                                                                                        </p>
+                                                                                    </div>
                                                                                 )}
+
+                                                                                {participation.status === 'ACCEPTED' && (() => {
+                                                                                    const exhibition = exhibitions.find(e => e.id === participation.exhibitionId);
+                                                                                    const startDate = exhibition?.startDate ? new Date(exhibition.startDate).toLocaleDateString('en-US') : 'غير محدد';
+                                                                                    return (
+                                                                                        <div className="mt-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                                                                                            <p className="text-sm font-bold text-primary">
+                                                                                                يرجى دفع الرسوم لتأكيد مشاركتك
+                                                                                            </p>
+                                                                                            <p className="text-xs text-muted-foreground mt-1">
+                                                                                                بمجرد دفع رسوم المشاركة (${participation.participationFee})، سيتم تأكيد حجز المكان الخاص بك في المعرض.
+                                                                                            </p>
+                                                                                            <div className="mt-2 p-2 bg-red-50 border border-red-100 rounded text-xs text-red-600">
+                                                                                                <strong>تنبيه:</strong> يجب إتمام الدفع قبل بدأ المعرض في {startDate}، وإلا سيتم إلغاء طلبك تلقائياً.
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    );
+                                                                                })()}
+
+                                                                                {participation.status === 'INVITED' && (() => {
+                                                                                    const exhibition = exhibitions.find(e => e.id === participation.exhibitionId);
+                                                                                    const startDate = exhibition?.startDate ? new Date(exhibition.startDate).toLocaleDateString('en-US') : 'غير محدد';
+                                                                                    return (
+                                                                                        <>
+                                                                                            <div className="text-xs text-green-600 font-medium mb-1">
+                                                                                                تاريخ بدأ المعرض: {startDate}
+                                                                                            </div>
+                                                                                            <Button
+                                                                                                size="sm"
+                                                                                                className="mt-1"
+                                                                                                onClick={() => openRegisterDialog(participation)}
+                                                                                                disabled={isDeadlinePassed(participation.responseDeadline)}
+                                                                                            >
+                                                                                                تسجيل المشاركة
+                                                                                            </Button>
+                                                                                            {isDeadlinePassed(participation.responseDeadline) && (
+                                                                                                <p className="text-xs text-red-600 mt-1">
+                                                                                                    انتهى الموعد النهائي للتسجيل
+                                                                                                </p>
+                                                                                            )}
+                                                                                        </>
+                                                                                    );
+                                                                                })()}
 
                                                                                 {participation.status === 'CONFIRMED' && (() => {
                                                                                     const exhibition = exhibitions.find(e => e.id === participation.exhibitionId);
@@ -407,8 +516,13 @@ export default function UniversityDashboard() {
 
                                                                                     return (
                                                                                         <>
-                                                                                            <Button 
-                                                                                                size="sm" 
+                                                                                            {isExhibitionConfirmed && (
+                                                                                                <div className="mb-2 p-2 bg-red-50 border border-red-100 rounded text-xs text-red-600">
+                                                                                                    <strong>تنبيه:</strong> يجب إتمام المشاركة قبل بدأ المعرض في {exhibition?.startDate ? new Date(exhibition.startDate).toLocaleDateString('en-US') : 'غير محدد'}، وإلا سيتم إلغاء مشاركتك تلقائياً.
+                                                                                                </div>
+                                                                                            )}
+                                                                                            <Button
+                                                                                                size="sm"
                                                                                                 className="mt-2"
                                                                                                 onClick={() => handleFinalizeParticipation(participation)}
                                                                                                 disabled={!canFinalize || isFinalizingParticipation}
@@ -429,8 +543,39 @@ export default function UniversityDashboard() {
                                                                                                     انتظر حتى يتم تأكيد المعرض
                                                                                                 </p>
                                                                                             )}
+                                                                                            {isExhibitionConfirmed && (
+                                                                                                <Button
+                                                                                                    variant="outline"
+                                                                                                    size="sm"
+                                                                                                    className="mt-2 mr-2 gap-2"
+                                                                                                    onClick={() => handleOpenBoothsDialog(participation)}
+                                                                                                >
+                                                                                                    <MapPin className="w-4 h-4" />
+                                                                                                    عرض الأكشاك المخصصة
+                                                                                                </Button>
+                                                                                            )}
                                                                                         </>
                                                                                     );
+                                                                                })()}
+
+                                                                                {(() => {
+                                                                                    const exhibition = exhibitions.find(e => e.id === participation.exhibitionId);
+                                                                                    const isExhibitionActiveOrCompleted = ['ACTIVE', 'COMPLETED'].includes(exhibition?.status || '');
+                                                                                    const isCancellable = ['INVITED', 'REGISTERED', 'ACCEPTED', 'CONFIRMED', 'FINALIZED'].includes(participation.status);
+
+                                                                                    if (isCancellable && !isExhibitionActiveOrCompleted) {
+                                                                                        return (
+                                                                                            <Button
+                                                                                                variant="ghost"
+                                                                                                size="sm"
+                                                                                                className="mt-2 text-accent hover:text-red-700 hover:bg-red-50"
+                                                                                                onClick={() => handleCancelParticipation(participation)}
+                                                                                            >
+                                                                                                إلغاء المشاركة
+                                                                                            </Button>
+                                                                                        );
+                                                                                    }
+                                                                                    return null;
                                                                                 })()}
                                                                             </div>
                                                                         </div>
@@ -505,7 +650,7 @@ export default function UniversityDashboard() {
                                         <p>رسوم المشاركة: ${selectedParticipation.participationFee}</p>
                                         {selectedParticipation.responseDeadline && (
                                             <p className="text-red-600">
-                                                الموعد النهائي: {new Date(selectedParticipation.responseDeadline).toLocaleDateString('ar-SA')}
+                                                الموعد النهائي: {new Date(selectedParticipation.responseDeadline).toLocaleDateString('en-US')}
                                             </p>
                                         )}
                                     </div>
@@ -553,6 +698,87 @@ export default function UniversityDashboard() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Allocated Booths Dialog */}
+            <Dialog open={boothsDialogOpen} onOpenChange={setBoothsDialogOpen}>
+                <DialogContent className="max-w-2xl" dir="rtl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <MapPin className="w-5 h-5 text-primary" />
+                            الأكشاك المخصصة للمشاركة
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    {isLoadingBooths ? (
+                        <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        </div>
+                    ) : allocatedBooths.length > 0 ? (
+                        <div className="space-y-4">
+                            <div className="rounded-md border">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="text-right">رقم الكشك</TableHead>
+                                            <TableHead className="text-right">المنطقة</TableHead>
+                                            <TableHead className="text-right">التفاصيل</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {allocatedBooths.map((booth) => (
+                                            <TableRow key={booth.id}>
+                                                <TableCell className="text-right font-medium">
+                                                    {booth.boothNumber}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    {booth.zone}
+                                                </TableCell>
+                                                <TableCell className="text-right text-muted-foreground text-xs">
+                                                    تم التخصيص في {new Date(booth.createdAt).toLocaleDateString('en-US')}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center py-12">
+                            <p className="text-muted-foreground">لا توجد أكشاك مخصصة لهذه المشاركة بعد.</p>
+                        </div>
+                    )}
+
+                    <DialogFooter>
+                        <Button onClick={() => setBoothsDialogOpen(false)}>
+                            إغلاق
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {/* Cancellation Confirmation Dialog */}
+            <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>هل أنت متأكد من رغبتك في إلغاء المشاركة؟</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            سيؤدي هذا إلى إلغاء حجزك بالكامل ولا يمكن التراجع عن هذا الإجراء.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isCancellingParticipation}>تراجع</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                confirmCancellation();
+                            }}
+                            disabled={isCancellingParticipation}
+                            className="bg-accent text-accent-foreground hover:bg-accent/80"
+                        >
+                            {isCancellingParticipation ? <Loader2 className="w-4 h-4 animate-spin" /> : 'نعم، قم بالإلغاء'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

@@ -6,10 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, DollarSign, Calendar, Users, TrendingUp, CheckCircle, XCircle } from "lucide-react";
+import { Calendar, CheckCircle, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { RequestDetailsDialog } from "@/components/financial-aid/request-details-dialog";
 import { ReviewRequestDialog } from "@/components/financial-aid/review-request-dialog";
+import { RadialChart } from "@/components/charts/radial-chart";
+import type { ChartConfig } from "@/components/ui/chart";
+import TotalRequestsAnimation from "@/assets/animations/total-requests-animation.json";
+import PendingRequestsAnimation from "@/assets/animations/waiting_requests_animation.json";
+import ApprovedRequestsAnimation from "@/assets/animations/accepted-requests-animation.json";
+import WalletAnimation from "@/assets/animations/wallet_animation.json";
+import Lottie from "lottie-react";
 
 export default function OrgFinancialAid() {
   const [requests, setRequests] = useState<FinancialAidResponse[]>([]);
@@ -23,7 +30,7 @@ export default function OrgFinancialAid() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch based on active tab
       if (activeTab === "pending") {
         const data = await financialAidService.getPendingRequests();
@@ -40,7 +47,7 @@ export default function OrgFinancialAid() {
       const [statsData] = await Promise.all([
         financialAidService.getStats()
       ]);
-      
+
       setStats(statsData);
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -76,16 +83,7 @@ export default function OrgFinancialAid() {
     }
   };
 
-  const handleCancel = async (requestId: number) => {
-    try {
-      await financialAidService.cancelRequest(requestId);
-      toast.success("تم إلغاء الطلب بنجاح");
-      fetchData();
-    } catch (error) {
-      console.error("Failed to cancel request:", error);
-      toast.error("فشل في إلغاء الطلب");
-    }
-  };
+
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -101,51 +99,64 @@ export default function OrgFinancialAid() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">إدارة المساعدات المالية</h1>
-        <p className="text-muted-foreground mt-1">
-          إدارة ومراجعة طلبات المساعدة المالية
-        </p>
-      </div>
-
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              إجمالي الطلبات
-            </CardDescription>
-            <CardTitle className="text-2xl">{Number(stats.totalRequests) || 0}</CardTitle>
-          </CardHeader>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Total Requests Card */}
+        <Card className="flex flex-col items-center">
+          <CardContent className="pt-4 pb-3 px-4">
+            <div className="relative flex items-center justify-center w-36 h-36">
+              <Lottie animationData={TotalRequestsAnimation} loop={true} style={{ width: '120px', height: '120px' }} />
+            </div>
+            <div className="mt-2 text-center">
+              <div className="text-xs font-medium text-muted-foreground">
+                إجمالي الطلبات - {Number(stats.totalRequests) || 0}
+              </div>
+            </div>
+          </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              قيد الانتظار
-            </CardDescription>
-            <CardTitle className="text-2xl">{Number(stats.pendingRequests) || 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
-              مقبول
-            </CardDescription>
-            <CardTitle className="text-2xl">{Number(stats.approvedRequests) || 0}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4" />
-              الميزانية المتاحة
-            </CardDescription>
-            <CardTitle className="text-xl">{Number(stats.availableBudget || 0).toLocaleString()} $</CardTitle>
-          </CardHeader>
+
+        {/* Pending Requests Stat with Animation */}
+        <RadialChart
+          title="قيد الانتظار"
+          value={Number(stats.pendingRequests) || 0}
+          maxValue={Number(stats.totalRequests) || 0}
+          fillColor="var(--chart-2)"
+          config={{
+            value: {
+              label: "Requests",
+              color: "var(--chart-2)",
+            },
+          } satisfies ChartConfig}
+          animationData={PendingRequestsAnimation}
+        />
+
+        {/* Approved Requests Stat with Animation */}
+        <RadialChart
+          title="مقبول"
+          value={Number(stats.approvedRequests) || 0}
+          maxValue={Number(stats.totalRequests) || 0}
+          fillColor="var(--chart-3)"
+          config={{
+            value: {
+              label: "Requests",
+              color: "var(--chart-3)",
+            },
+          } satisfies ChartConfig}
+          animationData={ApprovedRequestsAnimation}
+        />
+
+        {/* Available Budget Card */}
+        <Card className="flex flex-col items-center">
+          <CardContent className="pt-4 pb-3 px-4">
+            <div className="relative flex items-center justify-center w-36 h-36">
+              <Lottie animationData={WalletAnimation} loop={true} style={{ width: '120px', height: '120px' }} />
+            </div>
+            <div className="mt-2 text-center">
+              <div className="text-xs font-medium text-muted-foreground">
+                الميزانية المتاحة - {Number(stats.availableBudget || 0).toLocaleString()} $
+              </div>
+            </div>
+          </CardContent>
         </Card>
       </div>
 
@@ -160,105 +171,82 @@ export default function OrgFinancialAid() {
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>الطلبات</CardTitle>
-              <CardDescription>
-                {activeTab === "pending" && "الطلبات قيد الانتظار للمراجعة"}
-                {activeTab === "all" && "جميع الطلبات"}
-                {activeTab === FinancialAidStatus.APPROVED && "الطلبات المقبولة"}
-                {activeTab === FinancialAidStatus.DISBURSED && "الطلبات المصروفة"}
-                {activeTab === FinancialAidStatus.REJECTED && "الطلبات المرفوضة"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
-              ) : requests.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  لا توجد طلبات
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {requests.map((request) => (
-                    <Card key={request.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">{request.studentName}</h3>
-                              {getStatusBadge(request.status)}
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {new Date(request.requestedAt).toLocaleDateString("ar-SA")}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <DollarSign className="w-3 h-3" />
-                                {request.requestedAmount.toLocaleString()} $
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewDetails(request)}
-                            >
-                              التفاصيل
-                            </Button>
-                            {request.status === "PENDING" && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleReview(request)}
-                              >
-                                مراجعة
-                              </Button>
-                            )}
-                            {request.status === "APPROVED" && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleDisburse(request.id)}
-                              >
-                                <CheckCircle className="w-4 h-4 ml-1" />
-                                صرف
-                              </Button>
-                            )}
-                            {(request.status === "PENDING" || request.status === "APPROVED") && (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleCancel(request.id)}
-                              >
-                                <XCircle className="w-4 h-4 ml-1" />
-                                إلغاء
-                              </Button>
-                            )}
-                          </div>
-                        </div>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
+          ) : requests.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              لا توجد طلبات
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {requests.map((request) => (
+                <div key={request.id} className="flex flex-col p-4 bg-card border rounded-lg hover:shadow-sm transition-shadow">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
+                    <div className="flex flex-col gap-2 flex-1">
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(request.status)}
+                        <h3 className="font-semibold text-sm">{request.studentName}</h3>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(request.requestedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="w-3 h-3" />
+                          {request.requestedAmount.toLocaleString()} $
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewDetails(request)}
+                        className="h-8 bg-muted text-muted-foreground hover:bg-muted/80"
+                      >
+                        التفاصيل
+                      </Button>
+                      {request.status === "PENDING" && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleReview(request)}
+                          className="h-8"
+                        >
+                          مراجعة
+                        </Button>
+                      )}
+                      {request.status === "APPROVED" && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleDisburse(request.id)}
+                          className="h-8"
+                        >
+                          <CheckCircle className="w-4 h-4 ml-1" />
+                          صرف
+                        </Button>
+                      )}
+                    </div>
+                  </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">الجامعة:</span>
-                            <span className="font-medium ml-2">{request.universityName}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">التخصص:</span>
-                            <span className="font-medium ml-2">{request.fieldOfStudy}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">المعدل:</span>
-                            <span className="font-medium ml-2">{request.gpa.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs pt-2 border-t">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-muted-foreground font-normal">الجامعة</span>
+                      <span className="font-medium text-foreground">{request.universityName}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-muted-foreground font-normal">التخصص</span>
+                      <span className="font-medium text-foreground">{request.fieldOfStudy}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-muted-foreground font-normal">المعدل</span>
+                      <span className="font-medium text-foreground">{request.gpa.toFixed(2)}</span>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -268,7 +256,7 @@ export default function OrgFinancialAid() {
         onOpenChange={setDetailsDialogOpen}
         request={selectedRequest}
       />
-      
+
       <ReviewRequestDialog
         open={reviewDialogOpen}
         onOpenChange={setReviewDialogOpen}

@@ -5,6 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Building2, FileText, Calendar, TrendingUp, TrendingDown, Users, Loader2 } from "lucide-react";
 import { useSchoolParticipationStore } from "@/stores/school-participation-store";
 import { useSchoolStore } from "@/stores/school-store";
@@ -19,13 +29,16 @@ export default function SchoolDashboard() {
     const { ownerSchools, fetchSchoolsByOwnerId } = useSchoolStore();
     const { schoolParticipations, fetchParticipationsBySchoolId, isLoadingSchoolParticipations } = useSchoolParticipationStore();
     const { exhibitions, fetchAllExhibitions } = useExhibitionStore();
-    
+
     const [respondDialogOpen, setRespondDialogOpen] = useState(false);
     const [selectedParticipation, setSelectedParticipation] = useState<SchoolParticipationResponse | null>(null);
     const [expectedStudents, setExpectedStudents] = useState<string>("");
     const [isResponding, setIsResponding] = useState(false);
     const [isConfirming, setIsConfirming] = useState(false);
     const [isFinalizing, setIsFinalizing] = useState(false);
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [participationToCancel, setParticipationToCancel] = useState<SchoolParticipationResponse | null>(null);
+    const [isCancelling, setIsCancelling] = useState(false);
 
     // Fetch owner's schools on mount
     useEffect(() => {
@@ -115,7 +128,7 @@ export default function SchoolDashboard() {
             );
             toast.success(accept ? "تم قبول الدعوة بنجاح" : "تم رفض الدعوة");
             setRespondDialogOpen(false);
-            
+
             // Refresh participations
             if (ownerSchools.length > 0) {
                 ownerSchools.forEach(school => {
@@ -135,7 +148,7 @@ export default function SchoolDashboard() {
             setIsConfirming(true);
             await schoolParticipationService.confirmSchool(participationId);
             toast.success("تم تأكيد المشاركة بنجاح");
-            
+
             // Refresh participations
             if (ownerSchools.length > 0) {
                 ownerSchools.forEach(school => {
@@ -155,7 +168,7 @@ export default function SchoolDashboard() {
             setIsFinalizing(true);
             await schoolParticipationService.finalizeParticipation(participationId);
             toast.success("تم إتمام المشاركة بنجاح");
-            
+
             // Refresh participations
             if (ownerSchools.length > 0) {
                 ownerSchools.forEach(school => {
@@ -164,9 +177,46 @@ export default function SchoolDashboard() {
             }
         } catch (error) {
             console.error('Failed to finalize participation:', error);
-            toast.error("فشل في إتمام المشاركة");
+
+            // Check if failure is due to exhibition not being confirmed
+            const participation = schoolParticipations.find(p => p.id === participationId);
+            const exhibition = participation ? exhibitions.find(e => e.id === participation.exhibitionId) : null;
+
+            if (exhibition && exhibition.status !== 'CONFIRMED' && exhibition.status !== 'ACTIVE' && exhibition.status !== 'COMPLETED') {
+                toast.error("لا يمكنك إتمام المشاركة قبل تأكيد المعرض");
+            } else {
+                toast.error("فشل في إتمام المشاركة");
+            }
         } finally {
             setIsFinalizing(false);
+        }
+    };
+    const handleCancelClick = (participation: SchoolParticipationResponse) => {
+        setParticipationToCancel(participation);
+        setCancelDialogOpen(true);
+    };
+
+    const handleConfirmCancel = async () => {
+        if (!participationToCancel) return;
+
+        setIsCancelling(true);
+        try {
+            await schoolParticipationService.cancelParticipation(participationToCancel.id);
+            toast.success("تم إلغاء المشاركة بنجاح");
+
+            // Refresh participations
+            if (ownerSchools.length > 0) {
+                ownerSchools.forEach(school => {
+                    fetchParticipationsBySchoolId(school.id);
+                });
+            }
+            setCancelDialogOpen(false);
+        } catch (error) {
+            console.error('Failed to cancel participation:', error);
+            toast.error("فشل في إلغاء المشاركة");
+        } finally {
+            setIsCancelling(false);
+            setParticipationToCancel(null);
         }
     };
 
@@ -295,17 +345,16 @@ export default function SchoolDashboard() {
                                                     {participation.expectedStudents || '-'}
                                                 </td>
                                                 <td className="py-4 px-4 text-sm text-muted-foreground">
-                                                    {participation.invitedAt ? new Date(participation.invitedAt).toLocaleDateString('ar') : '-'}
+                                                    {participation.invitedAt ? new Date(participation.invitedAt).toLocaleDateString('en-US') : '-'}
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     {participation.responseDeadline ? (
                                                         <div className="flex flex-col gap-1">
-                                                            <span className={`text-sm ${
-                                                                isDeadlinePassed(participation.responseDeadline) 
-                                                                    ? 'text-red-600 font-semibold' 
-                                                                    : 'text-muted-foreground'
-                                                            }`}>
-                                                                {new Date(participation.responseDeadline).toLocaleDateString('ar')}
+                                                            <span className={`text-sm ${isDeadlinePassed(participation.responseDeadline)
+                                                                ? 'text-red-600 font-semibold'
+                                                                : 'text-muted-foreground'
+                                                                }`}>
+                                                                {new Date(participation.responseDeadline).toLocaleDateString('en-US')}
                                                             </span>
                                                             {isDeadlinePassed(participation.responseDeadline) && (
                                                                 <Badge variant="destructive" className="text-xs w-fit">
@@ -363,6 +412,25 @@ export default function SchoolDashboard() {
                                                         {(participation.status === 'FINALIZED' || participation.status === 'CANCELLED' || participation.status === 'REJECTED') && (
                                                             <span className="text-sm text-muted-foreground">-</span>
                                                         )}
+                                                        {participation.status !== 'CANCELLED' && participation.status !== 'REJECTED' && (() => {
+                                                            const exhibition = exhibitions.find(e => e.id === participation.exhibitionId);
+                                                            const isExhibitionActive = exhibition?.status === 'ACTIVE' || exhibition?.status === 'COMPLETED';
+
+                                                            if (!isExhibitionActive) {
+                                                                return (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                        onClick={() => handleCancelClick(participation)}
+                                                                        disabled={isCancelling}
+                                                                    >
+                                                                        إلغاء
+                                                                    </Button>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })()}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -422,7 +490,7 @@ export default function SchoolDashboard() {
                             {selectedParticipation && `المعرض: ${getExhibitionName(selectedParticipation.exhibitionId)}`}
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="space-y-4 mt-4" dir="rtl">
                         <div className="space-y-2">
                             <Label htmlFor="expectedStudents" className="text-right block">
@@ -483,6 +551,31 @@ export default function SchoolDashboard() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Cancel Confirmation Dialog */}
+            <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+                <AlertDialogContent dir="rtl">
+                    <AlertDialogHeader className="text-right">
+                        <AlertDialogTitle>هل أنت متأكد من إلغاء المشاركة؟</AlertDialogTitle>
+                        <AlertDialogDescription className="text-right">
+                            هذا الإجراء لا يمكن التراجع عنه. سيتم إلغاء مشاركة مدرستك في المعرض.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="flex-row-reverse gap-2">
+                        <AlertDialogCancel className="mt-0">تراجع</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleConfirmCancel();
+                            }}
+                            className="bg-accent text-accent-foreground hover:bg-accent/80"
+                            disabled={isCancelling}
+                        >
+                            {isCancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : 'نعم، قم بالإلغاء'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

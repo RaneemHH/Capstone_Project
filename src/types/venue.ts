@@ -22,9 +22,9 @@ export interface Venue {
 
 // Utility function to format rental fee
 export const formatRentalFee = (fee: number): string => {
-    return new Intl.NumberFormat('ar-LB', {
+    return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'LBP',
+        currency: 'USD',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(fee);

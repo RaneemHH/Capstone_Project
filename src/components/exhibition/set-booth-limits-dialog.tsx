@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -33,6 +33,28 @@ export function SetBoothLimitsDialog({
     const [maxBoothsPerProvider, setMaxBoothsPerProvider] = useState<string>("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [capacityResponse, setCapacityResponse] = useState<InvitationCapacityResponse | null>(null);
+    const [totalBooths, setTotalBooths] = useState<number | null>(null);
+    const [isLoadingBooths, setIsLoadingBooths] = useState(false);
+
+    // Fetch total booths when dialog opens
+    useEffect(() => {
+        const fetchTotalBooths = async () => {
+            if (open && exhibitionId) {
+                setIsLoadingBooths(true);
+                try {
+                    const booths = await boothService.getBoothsByExhibition(exhibitionId);
+                    setTotalBooths(booths.length);
+                } catch (error) {
+                    console.error('Failed to fetch booths:', error);
+                    // Don't show error toast, just log it
+                } finally {
+                    setIsLoadingBooths(false);
+                }
+            }
+        };
+
+        fetchTotalBooths();
+    }, [open, exhibitionId]);
 
     const handleSubmit = async () => {
         const uniBooths = parseInt(maxBoothsPerUniversity);
@@ -56,7 +78,7 @@ export function SetBoothLimitsDialog({
             });
             setCapacityResponse(response);
             toast.success("تم تحديث حدود الأماكن بنجاح");
-            
+
             if (onSuccess) {
                 onSuccess();
             }
@@ -88,6 +110,8 @@ export function SetBoothLimitsDialog({
                 </DialogHeader>
 
                 <div className="space-y-6 py-4">
+
+
                     {/* Input Fields */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -115,7 +139,7 @@ export function SetBoothLimitsDialog({
                                 id="providerBooths"
                                 type="number"
                                 min="1"
-                                value={maxBoothsPerProvider}
+                                value={capacityResponse?.maxBoothsPerProvider}
                                 onChange={(e) => setMaxBoothsPerProvider(e.target.value)}
                                 placeholder="مثال: 3"
                                 className="text-right"
@@ -124,7 +148,7 @@ export function SetBoothLimitsDialog({
                     </div>
 
                     {/* Capacity Response */}
-                    {capacityResponse && (
+                    {/* {capacityResponse && (
                         <Card className="bg-primary/5">
                             <CardContent className="pt-6">
                                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -147,7 +171,7 @@ export function SetBoothLimitsDialog({
                                 </div>
                             </CardContent>
                         </Card>
-                    )}
+                    )} */}
                 </div>
 
                 <DialogFooter className="flex gap-2 justify-end">

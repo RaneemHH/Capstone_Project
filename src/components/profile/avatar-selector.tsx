@@ -66,18 +66,17 @@ export function AvatarSelector({ currentAvatar, userRole, onAvatarSelect }: Avat
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-2xl text-center">اختر صورة رمزية</DialogTitle>
+          <DialogTitle className="text-2xl text-right">اختر صورة رمزية</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-4 py-4">
           {roleAvatars.map((avatar) => (
             <button
               key={avatar.id}
               onClick={() => handleSelect(avatar.url)}
-              className={`relative group transition-all duration-200 ${
-                selectedAvatar === avatar.url
+              className={`relative group transition-all duration-200 ${selectedAvatar === avatar.url
                   ? "ring-4 ring-primary rounded-full scale-105"
                   : "hover:scale-110"
-              }`}
+                }`}
             >
               <Avatar className="w-full aspect-square">
                 <AvatarImage src={avatar.url} alt={avatar.label} />

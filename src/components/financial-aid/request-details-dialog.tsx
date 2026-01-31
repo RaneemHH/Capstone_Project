@@ -53,7 +53,7 @@ export function RequestDetailsDialog({ open, onOpenChange, request }: RequestDet
           {/* Basic Information */}
           <div className="space-y-2">
             <h3 className="font-semibold text-sm">المعلومات الأساسية</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="flex items-start gap-2">
                 <Building2 className="w-4 h-4 text-muted-foreground mt-0.5" />
@@ -84,7 +84,7 @@ export function RequestDetailsDialog({ open, onOpenChange, request }: RequestDet
                 <div>
                   <p className="text-sm text-muted-foreground">تاريخ التقديم</p>
                   <p className="font-medium">
-                    {new Date(request.requestedAt).toLocaleDateString("ar-SA")}
+                    {new Date(request.requestedAt).toLocaleDateString("en-US")}
                   </p>
                 </div>
               </div>
@@ -94,7 +94,7 @@ export function RequestDetailsDialog({ open, onOpenChange, request }: RequestDet
           {/* Academic Information */}
           <div className="space-y-2">
             <h3 className="font-semibold text-sm">المعلومات الأكاديمية</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="flex items-start gap-2">
                 <GraduationCap className="w-4 h-4 text-muted-foreground mt-0.5" />
@@ -133,7 +133,7 @@ export function RequestDetailsDialog({ open, onOpenChange, request }: RequestDet
           {/* Financial Information */}
           <div className="space-y-2">
             <h3 className="font-semibold text-sm">المعلومات المالية</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="flex items-start gap-2">
                 <DollarSign className="w-4 h-4 text-muted-foreground mt-0.5" />
@@ -171,7 +171,7 @@ export function RequestDetailsDialog({ open, onOpenChange, request }: RequestDet
                   <div>
                     <p className="text-sm text-muted-foreground">تاريخ المراجعة</p>
                     <p className="font-medium">
-                      {new Date(request.reviewedAt).toLocaleDateString("ar-SA")}
+                      {new Date(request.reviewedAt).toLocaleDateString("en-US")}
                     </p>
                   </div>
                 </div>
@@ -196,10 +196,10 @@ export function RequestDetailsDialog({ open, onOpenChange, request }: RequestDet
           {/* Documents */}
           <div className="space-y-2">
             <h3 className="font-semibold text-sm">المستندات المرفقة</h3>
-            
+
             <div className="space-y-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full justify-between"
                 onClick={() => handleOpenDocument(request.documents.idCard, 'بطاقة الهوية')}
               >
@@ -207,8 +207,8 @@ export function RequestDetailsDialog({ open, onOpenChange, request }: RequestDet
                 <ExternalLink className="w-4 h-4" />
               </Button>
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full justify-between"
                 onClick={() => handleOpenDocument(request.documents.fees, 'إيصال الرسوم الجامعية')}
               >
@@ -216,8 +216,8 @@ export function RequestDetailsDialog({ open, onOpenChange, request }: RequestDet
                 <ExternalLink className="w-4 h-4" />
               </Button>
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full justify-between"
                 onClick={() => handleOpenDocument(request.documents.grades, 'إثبات الدرجات')}
               >

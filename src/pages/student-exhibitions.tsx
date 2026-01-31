@@ -129,12 +129,12 @@ export default function StudentExhibitions() {
                                             <div className="flex flex-col gap-2">
                                                 <Badge variant={
                                                     exhibition.status === 'CONFIRMED' ? 'default' :
-                                                    exhibition.status === 'ACTIVE' ? 'secondary' :
-                                                    exhibition.status === 'COMPLETED' ? 'outline' : 'outline'
+                                                        exhibition.status === 'ACTIVE' ? 'secondary' :
+                                                            exhibition.status === 'COMPLETED' ? 'outline' : 'outline'
                                                 }>
                                                     {exhibition.status === 'CONFIRMED' ? 'مؤكد' :
-                                                     exhibition.status === 'ACTIVE' ? 'نشط' :
-                                                     exhibition.status === 'COMPLETED' ? 'مكتمل' : exhibition.status}
+                                                        exhibition.status === 'ACTIVE' ? 'نشط' :
+                                                            exhibition.status === 'COMPLETED' ? 'مكتمل' : exhibition.status}
                                                 </Badge>
                                                 {registered && getStatusBadge(status)}
                                             </div>
@@ -146,10 +146,10 @@ export default function StudentExhibitions() {
                                             <div className="flex items-center gap-2 text-muted-foreground">
                                                 <Calendar className="w-4 h-4" />
                                                 <span>
-                                                    {new Date(exhibition.startDate).toLocaleDateString('ar-SA')} - {new Date(exhibition.endDate).toLocaleDateString('ar-SA')}
+                                                    {new Date(exhibition.startDate).toLocaleDateString('en-US')} - {new Date(exhibition.endDate).toLocaleDateString('en-US')}
                                                 </span>
                                             </div>
-                                            
+
                                             {exhibition.theme && (
                                                 <div className="flex items-center gap-2 text-muted-foreground">
                                                     <Building className="w-4 h-4" />
@@ -164,7 +164,7 @@ export default function StudentExhibitions() {
                                                 </div>
                                             )}
                                         </div>
-                                        
+
                                         {registered ? (
                                             <Button variant="outline" className="w-full" disabled>
                                                 <CheckCircle className="w-4 h-4 ml-2" />

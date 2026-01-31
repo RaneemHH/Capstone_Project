@@ -1,12 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {  FileQuestion, Layers } from "lucide-react";
-import {useEffect, useState} from "react";
-import {useAdminTestsStore} from "@/stores/admin-tests-store.tsx";
-import {getAllTests} from "@/services/test-api.ts";
-import type {AdminTest} from "@/data/admin-test-schema.ts";
-import {startTestAttempt} from "@/services/test-attempt.ts";
-import {useNavigate} from "react-router-dom";
-import {useUserTestStore} from "@/stores/user-test-store.tsx";
+import { FileQuestion, Layers } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useAdminTestsStore } from "@/stores/admin-tests-store.tsx";
+import { getAllTests } from "@/services/test-api.ts";
+import type { AdminTest } from "@/data/admin-test-schema.ts";
+import { startTestAttempt } from "@/services/test-attempt.ts";
+import { useNavigate } from "react-router-dom";
+import { useUserTestStore } from "@/stores/user-test-store.tsx";
 import { HeroSection } from "@/components/dashboard/hero-section";
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts";
 import {
@@ -15,8 +15,11 @@ import {
     ChartTooltipContent,
     type ChartConfig,
 } from "@/components/ui/chart";
-import { useAuthStore } from "@/stores/auth-store.tsx";
-
+import { useAuthStore } from "@/stores/auth-store";
+import { DataTable } from "@/components/attempts-table/data-table";
+import { columns } from "@/components/attempts/columns";
+import { useTestAttemptsStore } from "@/stores/test-attempts-store";
+import { getAttemptsByStudent } from "@/services/test-attempt";
 import { useMemo } from "react";
 
 export default function UserHome() {
@@ -25,9 +28,13 @@ export default function UserHome() {
 
     const { adminTestsResponse, setAdminTestsResponse } = useAdminTestsStore();
     const { setUserTestResponse } = useUserTestStore();
-    const {  accessToken } = useAuthStore();
+    const { accessToken } = useAuthStore();
     const userId = typeof accessToken?.userId === 'number' ? accessToken.userId : undefined;
-    console.log("testsResponse",adminTestsResponse);
+    console.log("testsResponse", adminTestsResponse);
+
+    // Attempts table state and logic
+    const [pageSize, setPageSize] = useState("3");
+    const { attempts, loading, error, setAttempts } = useTestAttemptsStore();
 
 
     const fetchTests = async () => {
@@ -40,6 +47,17 @@ export default function UserHome() {
         fetchTests();
     }, []);
 
+    // Fetch attempts data
+    useEffect(() => {
+        const fetchAttempts = async () => {
+            if (userId) {
+                const data = await getAttemptsByStudent(userId);
+                setAttempts(data);
+            }
+        };
+        fetchAttempts();
+    }, [userId, setAttempts]);
+
 
     const [startedTest, setStartedTest] = useState<number | undefined>();
     async function handleStartTest(testId: number) {
@@ -49,7 +67,7 @@ export default function UserHome() {
         }
         setStartedTest(testId);
         // Simulate navigation or test start
-        setTimeout(() => {}, 1000);
+        setTimeout(() => { }, 1000);
         const test = await startTestAttempt(testId, userId);
         console.log("test", test);
         console.log("testId", testId);
@@ -57,10 +75,10 @@ export default function UserHome() {
         navigate(`tests/${testId}/take/${test.id}`);
     }
 
- 
+
 
     // Calculate total questions for a test
-    const getTotalQuestions = (test:AdminTest) => {
+    const getTotalQuestions = (test: AdminTest) => {
         return test.sections.reduce((total, section) => {
             return total + section.questions.length;
         }, 0);
@@ -71,12 +89,7 @@ export default function UserHome() {
     // Tab state for chart/table
     const [activeTab, setActiveTab] = useState<'chart' | 'table'>('chart');
 
-    // Dummy attempts data for table (replace with real data as needed)
-    const attemptsData = useMemo(() => [
-      { id: 1, test: 'اختبار الذكاء', date: '2024-01-10', score: 85 },
-      { id: 2, test: 'اختبار الشخصية', date: '2024-02-15', score: 92 },
-      { id: 3, test: 'اختبار القدرات', date: '2024-03-20', score: 78 },
-    ], []);
+
 
     return (
         <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
@@ -111,7 +124,7 @@ export default function UserHome() {
                                     </button>
                                 </div>
                             </CardHeader>
-                            <CardContent className="flex-1 overflow-auto">
+                            <CardContent className="flex-1">
                                 {/* Tab Content */}
                                 {activeTab === 'chart' && (
                                     <ChartContainer config={{
@@ -124,7 +137,7 @@ export default function UserHome() {
                                             color: "var(--chart-2)",
                                         },
                                     } satisfies ChartConfig}
-                                    className="h-70 w-full">
+                                        className="h-70 w-full">
                                         <LineChart
                                             accessibilityLayer
                                             data={[
@@ -167,29 +180,14 @@ export default function UserHome() {
                                     </ChartContainer>
                                 )}
                                 {activeTab === 'table' && (
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full text-sm text-foreground border-separate border-spacing-y-2">
-                                            <thead>
-                                                <tr>
-                                                    <th className="text-right px-4 py-2 font-semibold">الاختبار</th>
-                                                    <th className="text-right px-4 py-2 font-semibold">التاريخ</th>
-                                                    <th className="text-right px-4 py-2 font-semibold">النتيجة</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {attemptsData.map((attempt) => (
-                                                    <tr key={attempt.id} className="bg-card rounded-lg shadow-sm">
-                                                        <td className="px-4 py-2 rounded-s-lg">{attempt.test}</td>
-                                                        <td className="px-4 py-2">{attempt.date}</td>
-                                                        <td className="px-4 py-2 rounded-e-lg">
-                                                            <span className="inline-block bg-primary/10 text-primary font-bold px-3 py-1 rounded-full">
-                                                                {attempt.score}
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                    <div>
+                                        {loading ? (
+                                            <div className="text-center py-8">جاري التحميل...</div>
+                                        ) : error ? (
+                                            <div className="text-red-500 text-center py-8">{error}</div>
+                                        ) : (
+                                            <DataTable columns={columns} data={attempts} pageSize={parseInt(pageSize)} />
+                                        )}
                                     </div>
                                 )}
                             </CardContent>
@@ -220,7 +218,7 @@ export default function UserHome() {
                                                 <CardTitle className="text-xl font-bold text-foreground leading-tight" dir="rtl">
                                                     {test.title}
                                                 </CardTitle>
-                                             
+
                                             </div>
                                         </CardHeader>
 
@@ -244,15 +242,15 @@ export default function UserHome() {
 
                                             {/* Action Buttons */}
                                             <div className="space-y-2 pt-2">
-                                               
+
                                                 <button
                                                     className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200
                                                                shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]
                                                                focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
                                                                ${isStarting
-                                                        ? 'bg-muted/50 cursor-not-allowed text-muted-foreground'
-                                                        : 'bg-accent hover:bg-accent/90 text-accent-foreground'
-                                                    }`}
+                                                            ? 'bg-muted/50 cursor-not-allowed text-muted-foreground'
+                                                            : 'bg-accent hover:bg-accent/90 text-accent-foreground'
+                                                        }`}
                                                     onClick={() => handleStartTest(test.id)}
                                                     disabled={isStarting}
                                                     dir="rtl"
