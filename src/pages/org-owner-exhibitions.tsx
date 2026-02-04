@@ -179,22 +179,8 @@ export default function OrgOwnerExhibitions() {
             return 0;
         });
 
-    const totalExhibitions = exhibitions.length;
-    const inSetup = exhibitions.filter((ex) =>
-        ["DRAFT", "VENUE_PENDING", "VENUE_APPROVED"].includes(ex.status)
-    ).length;
-    const activeNow = exhibitions.filter((ex) => ex.status === "ACTIVE").length;
-    const completed = exhibitions.filter((ex) => ex.status === "COMPLETED").length;
-    
     // Merge real data with mock data for demo
     const displayFinancials = getMergedFinancialData(monthlyFinancials);
-    
-    // Calculate financial KPIs
-    const currentMonth = displayFinancials?.monthlyStats?.[displayFinancials.monthlyStats.length - 1];
-    const previousMonth = displayFinancials?.monthlyStats?.[displayFinancials.monthlyStats.length - 2];
-    const netProfitChange = currentMonth && previousMonth 
-        ? ((currentMonth.netProfit - previousMonth.netProfit) / Math.abs(previousMonth.netProfit) * 100)
-        : 0;
 
     return (
         <TooltipProvider>

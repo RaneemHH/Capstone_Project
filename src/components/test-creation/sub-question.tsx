@@ -87,7 +87,7 @@ export default function SubQuestion({ subQuestion, testId }: SubQuestionProps){
         <div className="group relative">
             {/* Connection Line */}
             <div className="absolute -right-8 top-0 bottom-0 w-8 flex items-center">
-                <div className="w-full h-px bg-gradient-to-r from-primary/40 to-transparent"></div>
+                <div className="w-full h-px bg-linear-to-r from-primary/40 to-transparent"></div>
                 <div className="absolute right-0 w-2 h-2 bg-primary rounded-full"></div>
             </div>
 

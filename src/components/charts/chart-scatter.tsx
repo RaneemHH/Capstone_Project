@@ -5,7 +5,6 @@ import { CartesianGrid, Scatter, ScatterChart, XAxis, YAxis } from "recharts"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -42,7 +41,6 @@ const chartConfig = {
 export function ChartScatter({
   data,
   title = "توزيع الطلبات حسب الجامعة",
-  description = "عرض عدد الطلبات والمبالغ المطلوبة لكل جامعة",
 }: ChartScatterProps) {
   return (
     <Card className="h-full flex flex-col">

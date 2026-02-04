@@ -151,10 +151,11 @@ export default function TakeTest() {
             console.log("Test finalized successfully:", result);
             
             // Log the scoring calculation for verification
-            if (result.metricScores) {
-                const totalScore = Object.values(result.metricScores).reduce((sum: number, score: number) => sum + score, 0);
+            if (result && typeof result === 'object' && 'metricScores' in result) {
+                const metricScores = (result as any).metricScores;
+                const totalScore = Object.values(metricScores as Record<string, number>).reduce((sum: number, score: number) => sum + score, 0);
                 console.log("=== Final Score Calculation ===");
-                console.log("Metric Scores:", result.metricScores);
+                console.log("Metric Scores:", metricScores);
                 console.log("Total Points:", totalScore);
                 console.log("Scoring Logic:");
                 console.log("  - CHECKBOX questions: 1 point per answered question to the connected metric");

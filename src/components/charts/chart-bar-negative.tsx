@@ -1,6 +1,5 @@
 "use client"
 
-import { TrendingUp, TrendingDown } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, Cell, LabelList } from "recharts"
 
 import {
@@ -39,10 +38,6 @@ export function ChartBarNegative({
   title = "صافي الربح الشهري",
   description = "عرض صافي الربح (الإيرادات - المصروفات) لكل شهر",
 }: ChartBarNegativeProps) {
-  const totalProfit = data.reduce((sum, item) => sum + item.netProfit, 0);
-  const avgProfit = totalProfit / data.length;
-  const isPositiveTrend = avgProfit > 0;
-
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="p-3 pb-2">

@@ -23,7 +23,6 @@ import {
     Lock,
     FileText,
     Filter,
-    X,
     ArrowRight
 } from "lucide-react";
 import { formatRentalFee, formatSpace, getAvailabilityLabel, getAvailabilityBadgeClass } from "@/types/venue";

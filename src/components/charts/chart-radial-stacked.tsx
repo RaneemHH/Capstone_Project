@@ -6,10 +6,6 @@ import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts"
 import {
     Card,
     CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
 } from "@/components/ui/card"
 import {
     ChartContainer,
@@ -38,7 +34,7 @@ const chartConfig = {
     },
 } satisfies ChartConfig
 
-export function ChartRadialStacked({ revenue, expenses, title = "ملخص الإيرادات والمصاريف", description = "تحليل الإيرادات والمصروفات" }: ChartRadialStackedProps) {
+export function ChartRadialStacked({ revenue, expenses, title = "ملخص الإيرادات والمصاريف" }: ChartRadialStackedProps) {
     const chartData = [{ name: "budget", revenue: revenue, expenses: expenses }]
     const isTrendingUp = revenue >= expenses
 

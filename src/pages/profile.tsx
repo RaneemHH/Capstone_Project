@@ -134,7 +134,7 @@ export default function Profile() {
               <div className="relative">
                 <Avatar className="w-24 h-24 md:w-32 md:h-32">
                   <AvatarImage src={avatarUrl || localStorage.getItem("userAvatar") || ""} />
-                  <AvatarFallback className="text-3xl md:text-4xl text-primary-foreground font-bold bg-gradient-to-br from-primary to-primary/80">
+                  <AvatarFallback className="text-3xl md:text-4xl text-primary-foreground font-bold bg-linear-to-br from-primary to-primary/80">
                     {username?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>

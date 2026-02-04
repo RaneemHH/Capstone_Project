@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Outlet, useNavigate, useParams } from "react-router-dom"
 import { Pencil, Plus, Trash2, Layers, FileQuestion, Copy, Eye } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { deleteTest, getAllTestsByBaseId, setTestActive, createVersion } from "@/services/test-api.ts"
 import { useAdminTestsStore } from "@/stores/admin-tests-store.tsx"
 import { useMetricsStore } from "@/stores/metrics-store.tsx"
@@ -13,7 +13,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Switch } from "@/components/ui/switch"
 import type { AdminTest } from "@/data/admin-test-schema.ts"
 import { toast } from "sonner"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function TestList() {
   const navigate = useNavigate()
@@ -55,6 +54,8 @@ export default function TestList() {
   }
 
   async function handleDuplicate(testId: number) {
+    if (!baseTestIdFromUrl) return;
+    
     try {
       // Count existing versions to determine next version number
       const versionCount = adminTestsResponse.filter(t => 
@@ -62,14 +63,12 @@ export default function TestList() {
       ).length
 
       await createVersion({
-        baseTestId: baseTestIdFromUrl ,
+        baseTestId: baseTestIdFromUrl,
         sourceTestId: testId,
         versionName: `نسخة ${versionCount + 1}`
       })
 
-      if (baseTestIdFromUrl) {
-        await fetchTestsByBaseId(baseTestIdFromUrl)
-      }
+      await fetchTestsByBaseId(baseTestIdFromUrl)
       toast.success("تم نسخ الاختبار بنجاح")
     } catch (error) {
       console.error("Failed to duplicate test:", error)

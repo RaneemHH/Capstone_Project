@@ -230,22 +230,18 @@ export const mockNetProfitData = [
 
 // Student registrations table data
 export const mockStudentRegistrations: StudentRegistrationResponse[] = Array.from({ length: 50 }, (_, i) => {
-    const schoolIndex = Math.floor(Math.random() * mockSchoolParticipations.length);
-    const school = mockSchoolParticipations[schoolIndex];
-    
     return {
         id: 1000 + i,
         exhibitionId: CAREER_GUIDANCE_EXHIBITION_ID,
+        exhibitionTitle: "معرض التوجيه المهني",
         studentId: 5000 + i,
         studentName: `الطالب ${i + 1}`,
         studentEmail: `student${i + 1}@school.edu.jo`,
-        schoolId: school.schoolId,
-        schoolName: school.schoolName,
         status: i < 40 ? "REGISTERED" : "PENDING",
         approved: i < 40,
-        attended: i < 35,
         registeredAt: "2025-12-10T10:00:00",
         approvedAt: i < 40 ? "2025-12-12T14:00:00" : null,
+        attendedAt: i < 35 ? "2025-12-15T09:00:00" : null,
     };
 });
 

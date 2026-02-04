@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, FileText, ChevronDown, ChevronUp, Loader2, Search, Filter, TrendingUp, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Building2, ChevronDown, ChevronUp, Loader2, Search } from "lucide-react";
 import Lottie from "lottie-react";
 import Animation from "../assets/animations/activity_providers.json";
 import TotalRequestsAnimation from "@/assets/animations/total-requests-animation.json";
@@ -31,7 +31,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

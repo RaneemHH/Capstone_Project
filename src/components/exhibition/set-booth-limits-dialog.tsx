@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Building2, Briefcase } from "lucide-react";
 import { boothService } from "@/services/booth-service";
 import type { InvitationCapacityResponse } from "@/types/booth";
@@ -33,22 +32,16 @@ export function SetBoothLimitsDialog({
     const [maxBoothsPerProvider, setMaxBoothsPerProvider] = useState<string>("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [capacityResponse, setCapacityResponse] = useState<InvitationCapacityResponse | null>(null);
-    const [totalBooths, setTotalBooths] = useState<number | null>(null);
-    const [isLoadingBooths, setIsLoadingBooths] = useState(false);
 
     // Fetch total booths when dialog opens
     useEffect(() => {
         const fetchTotalBooths = async () => {
             if (open && exhibitionId) {
-                setIsLoadingBooths(true);
                 try {
-                    const booths = await boothService.getBoothsByExhibition(exhibitionId);
-                    setTotalBooths(booths.length);
+                    await boothService.getBoothsByExhibition(exhibitionId);
                 } catch (error) {
                     console.error('Failed to fetch booths:', error);
                     // Don't show error toast, just log it
-                } finally {
-                    setIsLoadingBooths(false);
                 }
             }
         };

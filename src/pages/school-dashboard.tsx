@@ -15,7 +15,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Calendar, FileText, Users } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Lottie from "lottie-react";
 import TotalRequestsAnimation from "@/assets/animations/total-requests-animation.json";
 import PendingRequestsAnimation from "@/assets/animations/waiting_requests_animation.json";

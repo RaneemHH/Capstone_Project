@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Search, ChevronLeft, ChevronRight, Building2, Loader2, UserPlus, ChevronDown, CheckCircle2, Pencil, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -841,9 +841,6 @@ export default function ManageParticipants() {
                 if (id) {
                     fetchRequestsByExhibition(parseInt(id));
                 }
-            }
-            if (id) {
-                fetchFinancialData();
             }
             setCancelDialogOpen(false);
         } catch (error) {

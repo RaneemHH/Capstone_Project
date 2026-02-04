@@ -17,31 +17,25 @@ import { getAllTestAttempts, getAttemptsByStudent } from "@/services/test-attemp
 import { useAuthStore } from "@/stores/auth-store";
 import { ChartBarLabel, type BarChartDataItem } from "@/components/charts/chart-bar-label";
 import { getTestAnalytics, type TestAnalyticsResponse } from "@/services/dashboard-service";
-import { getMergedTestAnalytics, getMergedAttemptsData } from "@/mockDataForCharts/mockDataAttempts";
 import Lottie from "lottie-react";
 import AttemptsAdminAnimation from "@/assets/animations/Attempts_Admin.json";
+import { jwtDecode } from "jwt-decode";
 
 
 export default function Attempts() {
   const [pageSize, setPageSize] = useState("10");
   const { attempts, loading, error, setAttempts } = useTestAttemptsStore();
-<<<<<<< HEAD
-  const { roles,accessToken } = useAuthStore(); // <-- get roles and user info
-let studentId: number | undefined = undefined;
-if (accessToken) {
-  try {
-    const decoded = jwtDecode<{ userId?: number; id?: number; sub?: number }>(String(accessToken));
-    studentId = decoded.userId || decoded.id || decoded.sub || undefined;
-  } catch {
-    studentId = undefined;
-=======
   const { roles, accessToken } = useAuthStore(); // <-- get roles and user info
   const [testAnalytics, setTestAnalytics] = useState<TestAnalyticsResponse | null>(null);
   
   let studentId: number | undefined = undefined;
   if (accessToken) {
-    studentId = accessToken.userId;
->>>>>>> af39d5553dc1ceec170d86a6065429a4afbcf49a
+    try {
+      const decoded = jwtDecode<{ userId?: number; id?: number; sub?: number }>(String(accessToken));
+      studentId = decoded.userId || decoded.id || decoded.sub || undefined;
+    } catch {
+      studentId = undefined;
+    }
   }
 
   useEffect(() => {
@@ -53,9 +47,7 @@ if (accessToken) {
         // Assuming user.id is the studentId
         data = await getAttemptsByStudent(studentId ? studentId : 4);
       }
-      // Merge with mock data for demo
-      const mergedData = getMergedAttemptsData(data);
-      setAttempts(mergedData);
+      setAttempts(data);
     };
     fetchAttempts();
   }, [roles, setAttempts, studentId]);
@@ -71,16 +63,12 @@ if (accessToken) {
           const analytics = await getTestAnalytics();
           console.log('Test Analytics Response:', analytics);
           console.log('attemptsByBaseTestType:', analytics?.attemptsByBaseTestType);
-          // Merge with mock data for demo
-          const mergedAnalytics = getMergedTestAnalytics(analytics);
-          setTestAnalytics(mergedAnalytics);
+          setTestAnalytics(analytics);
         } catch (error) {
           console.error('Failed to fetch test analytics:', error);
           if (error instanceof Error) {
             console.error('Error message:', error.message);
           }
-          // Use mock data if API fails
-          setTestAnalytics(getMergedTestAnalytics(null));
         }
       }
     };

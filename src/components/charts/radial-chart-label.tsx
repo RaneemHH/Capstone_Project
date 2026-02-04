@@ -1,13 +1,10 @@
 "use client"
 
-import { TrendingUp } from "lucide-react"
 import { LabelList, RadialBar, RadialBarChart } from "recharts"
 
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -37,9 +34,6 @@ interface RadialChartLabelProps {
 export function RadialChartLabel({
   data,
   title,
-  description,
-  footerText,
-  trendText,
   dataKey = "value",
   nameKey = "name",
 }: RadialChartLabelProps) {

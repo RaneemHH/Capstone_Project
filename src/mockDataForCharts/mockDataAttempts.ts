@@ -174,8 +174,8 @@ export const getMergedTestAnalytics = (realData: typeof mockTestAnalytics | null
         const merged = { ...realData };
         // Add mock counts to real counts
         Object.entries(mockTestAnalytics.attemptsByBaseTestType).forEach(([testType, count]) => {
-            merged.attemptsByBaseTestType[testType] = 
-                (merged.attemptsByBaseTestType[testType] || 0) + count;
+            (merged.attemptsByBaseTestType as Record<string, number>)[testType] = 
+                ((merged.attemptsByBaseTestType as Record<string, number>)[testType] || 0) + count;
         });
         merged.totalAttempts = (realData.totalAttempts || 0) + mockTestAnalytics.totalAttempts;
         return merged;

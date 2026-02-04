@@ -36,26 +36,36 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
             const mockData = getMockDataForExhibition(exhibitionId);
             if (mockData?.participationStats) {
                 const mergedStats: ParticipationStatsResponse = {
+                    exhibitionId: stats.exhibitionId,
+                    exhibitionTitle: stats.exhibitionTitle,
                     universities: {
                         invited: stats.universities.invited + mockData.participationStats.universities.invited,
                         registered: stats.universities.registered + mockData.participationStats.universities.accepted,
                         confirmed: stats.universities.confirmed + mockData.participationStats.universities.finalized,
                         finalized: stats.universities.finalized + mockData.participationStats.universities.finalized,
                         attended: stats.universities.attended + mockData.participationStats.universities.finalized,
+                        totalBooths: stats.universities.totalBooths,
+                        attendanceRate: stats.universities.attendanceRate,
                     },
                     activityProviders: {
                         invited: stats.activityProviders.invited + mockData.participationStats.activityProviders.invited,
                         proposalSubmitted: stats.activityProviders.proposalSubmitted + mockData.participationStats.activityProviders.accepted,
                         finalized: stats.activityProviders.finalized + mockData.participationStats.activityProviders.finalized,
                         attended: stats.activityProviders.attended + mockData.participationStats.activityProviders.finalized,
+                        totalBooths: stats.activityProviders.totalBooths,
+                        attendanceRate: stats.activityProviders.attendanceRate,
                     },
                     schools: {
                         invited: stats.schools.invited + mockData.participationStats.schools.invited,
                         registered: stats.schools.registered + mockData.participationStats.schools.confirmed,
                         finalized: stats.schools.finalized + mockData.participationStats.schools.participated,
                         attended: stats.schools.attended + mockData.participationStats.schools.participated,
+                        attendanceRate: stats.schools.attendanceRate,
                     },
                     students: stats.students,
+                    totalExpectedVisitors: stats.totalExpectedVisitors,
+                    actualAttendees: stats.actualAttendees,
+                    attendanceRate: stats.attendanceRate,
                 };
                 set({ participationStats: mergedStats, isLoadingStats: false });
             } else {
@@ -67,31 +77,41 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
             const mockData = getMockDataForExhibition(exhibitionId);
             if (mockData?.participationStats) {
                 const mockStats: ParticipationStatsResponse = {
+                    exhibitionId: exhibitionId,
+                    exhibitionTitle: '',
                     universities: {
                         invited: mockData.participationStats.universities.invited,
                         registered: mockData.participationStats.universities.accepted,
                         confirmed: mockData.participationStats.universities.finalized,
                         finalized: mockData.participationStats.universities.finalized,
                         attended: mockData.participationStats.universities.finalized,
+                        totalBooths: 0,
+                        attendanceRate: 0,
                     },
                     activityProviders: {
                         invited: mockData.participationStats.activityProviders.invited,
                         proposalSubmitted: mockData.participationStats.activityProviders.accepted,
                         finalized: mockData.participationStats.activityProviders.finalized,
                         attended: mockData.participationStats.activityProviders.finalized,
+                        totalBooths: 0,
+                        attendanceRate: 0,
                     },
                     schools: {
                         invited: mockData.participationStats.schools.invited,
                         registered: mockData.participationStats.schools.confirmed,
                         finalized: mockData.participationStats.schools.participated,
                         attended: mockData.participationStats.schools.participated,
+                        attendanceRate: 0,
                     },
                     students: {
-                        totalRegistered: 0,
-                        approved: 0,
+                        registered: 0,
                         attended: 0,
-                        pending: 0,
+                        noShow: 0,
+                        attendanceRate: 0,
                     },
+                    totalExpectedVisitors: 0,
+                    actualAttendees: 0,
+                    attendanceRate: 0,
                 };
                 set({ participationStats: mockStats, isLoadingStats: false, error: null });
             } else {

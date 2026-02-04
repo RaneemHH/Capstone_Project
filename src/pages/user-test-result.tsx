@@ -173,22 +173,25 @@ export default function UserTestResult() {
             
             // Log scoring details for verification
             const personalityResult = location.state.personalityResult;
-            const totalScore = Object.values(personalityResult.metricScores).reduce((sum: number, score: number) => sum + score, 0);
-            
-            console.log("=== Test Result Scoring Details ===");
-            console.log("Individual Metric Scores:", personalityResult.metricScores);
-            console.log("Total Score:", totalScore);
-            console.log("Top 3 Metrics:", {
-                first: personalityResult.firstMetric,
-                second: personalityResult.secondMetric,
-                third: personalityResult.thirdMetric
-            });
-            console.log("Score Breakdown:");
-            Object.entries(personalityResult.metricScores).forEach(([metric, score]) => {
-                const percentage = ((score as number) / totalScore * 100).toFixed(1);
-                console.log(`  ${metric}: ${score} points (${percentage}%)`);
-            });
-            console.log("===================================");
+            if (personalityResult && typeof personalityResult === 'object' && 'metricScores' in personalityResult) {
+                const metricScores = personalityResult.metricScores as Record<string, number>;
+                const totalScore = Object.values(metricScores).reduce((sum: number, score: number) => sum + score, 0);
+                
+                console.log("=== Test Result Scoring Details ===");
+                console.log("Individual Metric Scores:", metricScores);
+                console.log("Total Score:", totalScore);
+                console.log("Top 3 Metrics:", {
+                    first: personalityResult.firstMetric,
+                    second: personalityResult.secondMetric,
+                    third: personalityResult.thirdMetric
+                });
+                console.log("Score Breakdown:");
+                Object.entries(metricScores).forEach(([metric, score]) => {
+                    const percentage = ((score as number) / totalScore * 100).toFixed(1);
+                    console.log(`  ${metric}: ${score} points (${percentage}%)`);
+                });
+                console.log("===================================");
+            }
         }
         if (location.state?.attemptId) {
             setAttemptId(location.state.attemptId);

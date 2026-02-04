@@ -3,7 +3,7 @@ import { financialAidService } from "@/services/financial-aid-service";
 import type { FinancialAidResponse } from "@/types/financial-aid";
 import { FinancialAidStatus } from "@/types/financial-aid";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, CheckCircle, DollarSign } from "lucide-react";

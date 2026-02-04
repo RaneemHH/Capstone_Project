@@ -213,15 +213,15 @@ export default function BaseTest() {
                                         <div className="flex items-start gap-2 justify-between">
                                             <div className="flex items-center gap-2 flex-1 min-w-0">
                                                 {isPdf ? (
-                                                    <div className="w-6 h-6 bg-red-500 rounded flex items-center justify-center flex-shrink-0">
+                                                    <div className="w-6 h-6 bg-red-500 rounded flex items-center justify-center shrink-0">
                                                         <span className="text-white text-xs font-bold">P</span>
                                                     </div>
                                                 ) : isWord ? (
-                                                    <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center flex-shrink-0">
+                                                    <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center shrink-0">
                                                         <span className="text-white text-xs font-bold">W</span>
                                                     </div>
                                                 ) : (
-                                                    <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center flex-shrink-0">
+                                                    <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center shrink-0">
                                                         <FileText className="w-3 h-3 text-white" />
                                                     </div>
                                                 )}
@@ -241,35 +241,13 @@ export default function BaseTest() {
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 hover:bg-muted flex-shrink-0"
+                                                        className="h-8 w-8 hover:bg-muted shrink-0"
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
                                                         <MoreVertical className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="start">
-<<<<<<< HEAD
-                                                    <div dir="rtl">
-                                                        <DropdownMenuItem
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleOpenDocument(doc.id);
-                                                            }}
-                                                            className="cursor-pointer"
-                                                        >
-                                                            <span>فتح في نافذة جديدة</span>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleDeleteDocument(doc.id);
-                                                            }}
-                                                            className="cursor-pointer text-destructive hover:text-destructive-foreground hover:bg-destructive"
-                                                        >
-                                                            <span>حذف</span>
-                                                        </DropdownMenuItem>
-                                                    </div>
-=======
                                                     <DropdownMenuItem
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -288,7 +266,6 @@ export default function BaseTest() {
                                                     >
                                                         <span>حذف</span>
                                                     </DropdownMenuItem>
->>>>>>> af39d5553dc1ceec170d86a6065429a4afbcf49a
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
@@ -348,11 +325,7 @@ export default function BaseTest() {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="start" className="w-30">
-<<<<<<< HEAD
                                                         <div dir="rtl">
-=======
-                                                        <div>
->>>>>>> af39d5553dc1ceec170d86a6065429a4afbcf49a
                                                             <DropdownMenuItem
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();

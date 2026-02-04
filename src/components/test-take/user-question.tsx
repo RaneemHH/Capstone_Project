@@ -163,7 +163,7 @@ export default function UserQuestion({ questionId, sectionId }: QuestionProps) {
                                                         }}
                                                         className={`w-12 h-12 rounded-full transition-all duration-200 flex items-center justify-center ${
                                                             isSelected
-                                                                ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg scale-110'
+                                                                ? 'bg-linear-to-r from-blue-600 to-blue-500 text-white shadow-lg scale-110'
                                                                 : 'bg-gray-50 text-gray-700 border border-gray-200 hover:border-purple-300 hover:bg-purple-50'
                                                         }`}
                                                     >

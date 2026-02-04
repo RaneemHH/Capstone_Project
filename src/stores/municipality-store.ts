@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { municipalityService } from '@/services/municipalityService';
 import type { MunicipalityResponse } from '@/types/municipality';
-import { getMergedMunicipalities } from '@/mockDataForCharts/mockExhibitionDetails';
 
 interface MunicipalityStore {
     municipalities: MunicipalityResponse[];
