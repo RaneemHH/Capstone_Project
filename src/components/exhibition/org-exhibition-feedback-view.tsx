@@ -63,27 +63,11 @@ export function OrgExhibitionFeedbackView({ exhibitionId }: OrgExhibitionFeedbac
     }
 
     return (
-<<<<<<< HEAD
-        <div className="space-y-8">
-            {/* Centered Rating Display */}
-            <div className="flex flex-col items-center justify-center py-8">
-                <div className="text-7xl font-bold mb-4">
-                    {getAverageRating()}
-                </div>
-                <div className="flex items-center gap-1 mb-3">
-                    {getRatingStars(Math.round(parseFloat(String(getAverageRating()))))}
-                </div>
-                <div className="text-muted-foreground text-sm">
-                    ({feedbacks.length} تقييمات)
-                </div>
-            </div>
-=======
         <Tabs defaultValue="comments" className="w-full" dir="rtl">
             <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
                 <TabsTrigger value="comments">التعليقات</TabsTrigger>
                 <TabsTrigger value="analytics">الإحصائيات</TabsTrigger>
             </TabsList>
->>>>>>> af39d5553dc1ceec170d86a6065429a4afbcf49a
 
             <TabsContent value="comments" className="space-y-8 mt-6">
                 {/* Centered Rating Display */}
@@ -92,7 +76,7 @@ export function OrgExhibitionFeedbackView({ exhibitionId }: OrgExhibitionFeedbac
                         {getAverageRating()}
                     </div>
                     <div className="flex items-center gap-1 mb-3">
-                        {getRatingStars(Math.round(parseFloat(getAverageRating())))}
+                        {getRatingStars(Math.round(parseFloat(String(getAverageRating()))))}
                     </div>
                     <div className="text-muted-foreground text-sm">
                         ({feedbacks.length} تقييمات)
