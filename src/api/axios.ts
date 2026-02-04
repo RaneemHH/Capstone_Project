@@ -6,6 +6,7 @@ const api = axios.create({
         'Content-Type': 'application/json',
     },
 });
+    console.log('API Base URL:', import.meta.env.VITE_API_BASE_URL);
 
 // Request interceptor - Add access token to headers
 api.interceptors.request.use((config) => {
@@ -69,9 +70,10 @@ api.interceptors.response.use(
 
             try {
                 // Call refresh endpoint
-                const response = await axios.post('http://localhost:8080/auth/refresh', {
-                    refreshToken
-                });
+               const response = await axios.post(
+                    `${import.meta.env.VITE_API_BASE_URL}/auth/refresh`,
+                    { refreshToken }
+                );
 
                 const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
 
