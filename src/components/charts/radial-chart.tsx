@@ -9,7 +9,7 @@ import {
 import {
   Card,
   CardContent,
- 
+
 } from "@/components/ui/card";
 import {
   ChartContainer,
@@ -51,8 +51,8 @@ export const RadialChart = ({
 
   return (
     <Card className={`flex flex-col items-center ${className}`}>
-      <CardContent className="pt-4 pb-3 px-4">
-        <div className="relative mx-auto aspect-square w-30 h-30 flex items-center justify-center">
+      <CardContent className="pt-3 pb-2 px-3">
+        <div className="relative mx-auto aspect-square w-24 h-24 flex items-center justify-center">
           <ChartContainer
             config={config}
             className="absolute inset-0 w-full h-full"
@@ -71,7 +71,7 @@ export const RadialChart = ({
                 className="first:fill-gray-200 dark:first:fill-gray-800 last:fill-background"
                 polarRadius={[outerRadius - 12, innerRadius - 3]}
               />
-              <RadialBar dataKey={dataKey} background cornerRadius={10} />
+              <RadialBar dataKey={dataKey} cornerRadius={10} />
               <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
                 <Label
                   content={({ viewBox }) => {
@@ -100,12 +100,12 @@ export const RadialChart = ({
           </ChartContainer>
           {/* Overlay Lottie animation in the center, if provided */}
           {animationData && (
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-              <Lottie animationData={animationData} loop={true} style={{ width: '75px', height: '75px' }} />
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10">
+              <Lottie animationData={animationData} loop={true} style={{ width: '55px', height: '55px' }} />
             </div>
           )}
         </div>
-        <div className="mt-2 text-center">
+        <div className="mt-1 text-center">
           <div className="text-xs font-medium text-muted-foreground">
             {title} - {value.toLocaleString()}
           </div>

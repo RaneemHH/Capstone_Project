@@ -21,6 +21,16 @@ export interface SchoolParticipationResponse {
     rejectionReason: string | null;
     confirmedAt: string | null;
     attendedAt: string | null;
+    // Exhibition details
+    exhibitionTitle?: string;
+    exhibitionStartDate?: string;
+    // School details
+    school?: {
+        id: number;
+        name: string;
+        contactEmail: string;
+        contactPhone: string | null;
+    };
 }
 
 export interface InviteSchoolRequest {

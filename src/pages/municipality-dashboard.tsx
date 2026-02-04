@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Building2, FileText, MapPin, TrendingUp, TrendingDown, Loader2, Check, X, Info } from "lucide-react";
+import { Loader2, Check, X, Info } from "lucide-react";
 import Lottie from "lottie-react";
 import Animation from "../assets/animations/Customer_Support.json";
 import { useVenueRequestStore } from "@/stores/venue-request-store";
@@ -15,6 +15,13 @@ import { exhibitionService } from '@/services/exhibitionService';
 import type { Venue } from '@/types/venue';
 import type { ExhibitionResponse } from '@/types/exhibition';
 import { toast } from "sonner";
+import { RadialChart } from "@/components/charts/radial-chart";
+import type { ChartConfig } from "@/components/ui/chart";
+import PendingRequestsAnimation from "@/assets/animations/waiting_requests_animation.json";
+import RejectedRequestsAnimation from "@/assets/animations/rejected-requests-animation.json";
+import ApprovedRequestsAnimation from "@/assets/animations/accepted-requests-animation.json";
+import TotalRequestsAnimation from "@/assets/animations/total-requests-animation.json";
+import DeadlineAnimation from "@/assets/animations/deadline_clock.json";
 
 
 export default function MunicipalityDashboard() {
@@ -97,47 +104,21 @@ export default function MunicipalityDashboard() {
         }
     }, [venueRequests]);
 
-    // Mock data for stats
-    const stats = [
-        {
-            title: "إجمالي الطلبات",
-            value: venueRequests.length.toString(),
-            change: "+18%",
-            isPositive: true,
-            icon: FileText,
-            color: "text-accent",
-            bgColor: "bg-accent/10"
-        },
-        {
-            title: "الأماكن المتاحة",
-            value: "1,423",
-            change: "+8%",
-            isPositive: true,
-            icon: MapPin,
-            color: "text-primary",
-            bgColor: "bg-primary/10"
-        },
-        {
-            title: "المنظمات",
-            value: "216",
-            change: "+23%",
-            isPositive: true,
-            icon: Building2,
-            color: "text-foreground",
-            bgColor: "bg-foreground/10"
-        },
-        {
-            title: "نسبة الموافقة",
-            value: venueRequests.length > 0
-                ? `${Math.round((venueRequests.filter(r => r.status === 'APPROVED').length / venueRequests.length) * 100)}%`
-                : "0%",
-            change: "-2%",
-            isPositive: false,
-            icon: TrendingUp,
-            color: "text-muted",
-            bgColor: "bg-muted/20"
-        }
-    ];
+    // // Calculate meaningful stats from real data
+    // const pendingCount = venueRequests.filter(r => r.status === 'PENDING').length;
+    // const approvedCount = venueRequests.filter(r => r.status === 'APPROVED').length;
+    // const rejectedCount = venueRequests.filter(r => r.status === 'REJECTED').length;
+
+    // // Calculate urgent deadlines (within next 7 days)
+    // const now = new Date();
+    // const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    // const urgentDeadlinesCount = venueRequests.filter(r => {
+    //     if (!r.responseDeadline) return false;
+    //     const deadline = new Date(r.responseDeadline);
+    //     return deadline >= now && deadline <= sevenDaysFromNow && r.status === 'PENDING';
+    // }).length;
+
+
 
     // Format date to Arabic
     // const formatDate = (dateString: string) => {
@@ -168,41 +149,100 @@ export default function MunicipalityDashboard() {
 
     return (
         <div className="bg-background p-6 flex flex-col min-h-screen lg:min-h-0 lg:h-[650px] lg:overflow-hidden" dir="rtl">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-                {stats.map((stat, index) => {
-                    const Icon = stat.icon;
-                    return (
-                        <Card key={index} className="border-border">
-                            <CardContent className="p-4">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                        <p className="text-xs text-muted-foreground mb-1">{stat.title}</p>
-                                        <h3 className="text-2xl font-bold text-foreground mb-1">{stat.value}</h3>
-                                        <div className="flex items-center gap-1">
-                                            <span className={`text-sm font-medium ${stat.isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                                                {stat.change}
-                                            </span>
-                                            {stat.isPositive ? (
-                                                <TrendingUp className="w-4 h-4 text-green-600" />
-                                            ) : (
-                                                <TrendingDown className="w-4 h-4 text-red-600" />
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className={`${stat.bgColor} ${stat.color} p-2 rounded-full`}>
-                                        <Icon className="w-5 h-5" />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    );
-                })}
+            {/* Stats Cards with RadialChart */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+                {/* Total Requests */}
+                <Card className="flex flex-col items-center">
+                    <CardContent className="pt-3 pb-2 px-2">
+                        <div className="relative flex items-center justify-center w-20 h-20">
+                            <Lottie animationData={TotalRequestsAnimation} loop={true} style={{ width: '80px', height: '80px' }} />
+                        </div>
+                        <div className="mt-1 text-center">
+                            <div className="text-xs font-medium text-muted-foreground">
+                                إجمالي الطلبات - {venueRequests.length}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Pending Requests */}
+                <RadialChart
+                    title="قيد الانتظار"
+                    value={venueRequests.filter((r) => r.status === "PENDING").length}
+                    maxValue={venueRequests.length}
+                    fillColor="var(--chart-2)"
+                    config={{
+                        value: {
+                            label: "Requests",
+                            color: "var(--chart-2)",
+                        },
+                    } satisfies ChartConfig}
+                    animationData={PendingRequestsAnimation}
+                    innerRadius={40}
+                    outerRadius={50}
+                />
+
+                {/* Approved Requests */}
+                <RadialChart
+                    title="مقبول"
+                    value={venueRequests.filter((r) => r.status === "APPROVED").length}
+                    maxValue={venueRequests.length}
+                    fillColor="var(--chart-3)"
+                    config={{
+                        value: {
+                            label: "Requests",
+                            color: "var(--chart-3)",
+                        },
+                    } satisfies ChartConfig}
+                    animationData={ApprovedRequestsAnimation}
+                    innerRadius={40}
+                    outerRadius={50}
+                />
+
+                {/* Rejected Requests */}
+                <RadialChart
+                    title="مرفوض"
+                    value={venueRequests.filter((r) => r.status === "REJECTED").length}
+                    maxValue={venueRequests.length}
+                    fillColor="var(--chart-4)"
+                    config={{
+                        value: {
+                            label: "Requests",
+                            color: "var(--chart-4)",
+                        },
+                    } satisfies ChartConfig}
+                    animationData={RejectedRequestsAnimation}
+                    innerRadius={40}
+                    outerRadius={50}
+                />
+
+                {/* Urgent Deadlines (Within 7 Days) */}
+                <RadialChart
+                    title="أقل من أسبوع"
+                    value={venueRequests.filter((r) => {
+                        if (!r.responseDeadline || r.status !== "PENDING") return false;
+                        const deadline = new Date(r.responseDeadline);
+                        const now = new Date();
+                        const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                        return deadline >= now && deadline <= sevenDaysFromNow;
+                    }).length}
+                    maxValue={venueRequests.filter((r) => r.status === "PENDING").length}
+                    fillColor="var(--chart-6)"
+                    config={{
+                        value: {
+                            label: "Requests",
+                            color: "var(--chart-6)",
+                        },
+                    } satisfies ChartConfig}
+                    innerRadius={40}
+                    outerRadius={50}
+                    animationData={DeadlineAnimation}
+                />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:flex-1 lg:overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:flex-1 lg:overflow-hidden">
                 {/* Recent Requests */}
-                <Card className="lg:col-span-2 border-border flex flex-col lg:overflow-hidden">
+                <Card className="lg:col-span-3 border-border flex flex-col lg:overflow-hidden">
                     <CardHeader>
                         <CardTitle className="text-foreground">الطلبات الأخيرة</CardTitle>
                     </CardHeader>
@@ -239,88 +279,98 @@ export default function MunicipalityDashboard() {
                                         {venueRequests.slice(0, 5).map((request) => {
                                             const venue = venues.get(request.venueId);
                                             const exhibition = exhibitions.get(request.exhibitionId);
-                                            return (
-                                            <tr key={request.id} className="border-b border-border last:border-0">
-                                                <td className="py-4 px-4 text-sm font-medium text-foreground">#{request.id}</td>
-                                                <td className="py-4 px-4 text-sm text-foreground">
-                                                    {exhibition ? exhibition.title : 'جاري التحميل...'}
-                                                </td>
-                                                <td className="py-4 px-4 text-sm text-foreground">{request.venueName}</td>
-                                                <td className="py-4 px-4">
-                                                    {venue ? (
-                                                        <Badge className={venue.available ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}>
-                                                            {venue.available ? 'متاح' : 'محجوز'}
-                                                        </Badge>
-                                                    ) : (
-                                                        <span className="text-sm text-muted-foreground">جاري...</span>
-                                                    )}
-                                                </td>
-                                                <td className="py-4 px-4">
-                                                    <Badge className={getVenueRequestStatusBadgeClass(request.status)}>
-                                                        {VenueRequestStatusLabels[request.status]}
-                                                    </Badge>
-                                                </td>
-                                                <td className="py-4 px-4 text-sm text-muted-foreground">
-                                                    {request.responseDeadline ? (() => {
-                                                        const date = new Date(request.responseDeadline);
-                                                        const dateStr = date.toLocaleDateString('en-US', {
-                                                            year: 'numeric',
-                                                            month: '2-digit',
-                                                            day: '2-digit'
-                                                        });
-                                                        const timeStr = date.toLocaleTimeString('en-US', {
-                                                            hour: '2-digit',
-                                                            minute: '2-digit',
-                                                            hour12: true
-                                                        });
-                                                        return `${dateStr} (${timeStr})`;
-                                                    })() : "غير محدد"}
-                                                </td>
-                                             
-                                                <td className="py-4 px-4">
-                                                    {request.status === 'PENDING' && (
-                                                        <div className="flex items-center gap-1">
-                                                            <Button
-                                                                size="icon"
-                                                                variant="ghost"
-                                                                className="h-8 w-8 text-primary hover:text-primary/80 hover:bg-primary/10"
-                                                                onClick={() => openReviewDialog(request.id, true)}
-                                                                disabled={actionLoading === request.id}
-                                                            >
-                                                                {actionLoading === request.id ? (
-                                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                                ) : (
-                                                                    <Check className="h-4 w-4" />
-                                                                )}
-                                                            </Button>
-                                                            <Button
-                                                                size="icon"
-                                                                variant="ghost"
-                                                                className="h-8 w-8 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
-                                                                onClick={() => openReviewDialog(request.id, false)}
-                                                                disabled={actionLoading === request.id}
-                                                            >
-                                                                {actionLoading === request.id ? (
-                                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                                ) : (
-                                                                    <X className="h-4 w-4" />
-                                                                )}
-                                                            </Button>
-                                                        </div>
 
-                                                    )}
-                                                </td>
-                                                   <td className="py-4 px-4">
-                                                    <Button
-                                                        size="icon"
-                                                        variant="ghost"
-                                                        className="h-8 w-8 text-secondary-foreground hover:text-secondary-foreground/80 hover:bg-secondary/50"
-                                                        onClick={() => setSelectedRequest(request)}
-                                                    >
-                                                        <Info className="h-4 w-4" />
-                                                    </Button>
-                                                </td>
-                                            </tr>
+                                            // Check if deadline is within 7 days
+                                            const isUrgent = (() => {
+                                                if (!request.responseDeadline || request.status !== 'PENDING') return false;
+                                                const deadline = new Date(request.responseDeadline);
+                                                const now = new Date();
+                                                const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                                                return deadline >= now && deadline <= sevenDaysFromNow;
+                                            })();
+
+                                            return (
+                                                <tr key={request.id} className={`border-b border-border last:border-0 ${isUrgent ? 'bg-red-50 dark:bg-red-950/20' : ''}`}>
+                                                    <td className="py-4 px-4 text-sm font-medium text-foreground">#{request.id}</td>
+                                                    <td className="py-4 px-4 text-sm text-foreground">
+                                                        {exhibition ? exhibition.title : 'جاري التحميل...'}
+                                                    </td>
+                                                    <td className="py-4 px-4 text-sm text-foreground">{request.venueName}</td>
+                                                    <td className="py-4 px-4">
+                                                        {venue ? (
+                                                            <Badge className={venue.available ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}>
+                                                                {venue.available ? 'متاح' : 'محجوز'}
+                                                            </Badge>
+                                                        ) : (
+                                                            <span className="text-sm text-muted-foreground">جاري...</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-4 px-4">
+                                                        <Badge className={getVenueRequestStatusBadgeClass(request.status)}>
+                                                            {VenueRequestStatusLabels[request.status]}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="py-4 px-4 text-sm text-muted-foreground">
+                                                        {request.responseDeadline ? (() => {
+                                                            const date = new Date(request.responseDeadline);
+                                                            const dateStr = date.toLocaleDateString('en-US', {
+                                                                year: 'numeric',
+                                                                month: '2-digit',
+                                                                day: '2-digit'
+                                                            });
+                                                            const timeStr = date.toLocaleTimeString('en-US', {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                                hour12: true
+                                                            });
+                                                            return `${dateStr} (${timeStr})`;
+                                                        })() : "غير محدد"}
+                                                    </td>
+
+                                                    <td className="py-4 px-4">
+                                                        {request.status === 'PENDING' && (
+                                                            <div className="flex items-center gap-1">
+                                                                <Button
+                                                                    size="icon"
+                                                                    variant="ghost"
+                                                                    className="h-8 w-8 text-primary hover:text-primary/80 hover:bg-primary/10"
+                                                                    onClick={() => openReviewDialog(request.id, true)}
+                                                                    disabled={actionLoading === request.id}
+                                                                >
+                                                                    {actionLoading === request.id ? (
+                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                    ) : (
+                                                                        <Check className="h-4 w-4" />
+                                                                    )}
+                                                                </Button>
+                                                                <Button
+                                                                    size="icon"
+                                                                    variant="ghost"
+                                                                    className="h-8 w-8 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                                                                    onClick={() => openReviewDialog(request.id, false)}
+                                                                    disabled={actionLoading === request.id}
+                                                                >
+                                                                    {actionLoading === request.id ? (
+                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                    ) : (
+                                                                        <X className="h-4 w-4" />
+                                                                    )}
+                                                                </Button>
+                                                            </div>
+
+                                                        )}
+                                                    </td>
+                                                    <td className="py-4 px-4">
+                                                        <Button
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            className="h-8 w-8 text-secondary-foreground hover:text-secondary-foreground/80 hover:bg-secondary/50"
+                                                            onClick={() => setSelectedRequest(request)}
+                                                        >
+                                                            <Info className="h-4 w-4" />
+                                                        </Button>
+                                                    </td>
+                                                </tr>
                                             );
                                         })}
                                     </tbody>
@@ -331,7 +381,7 @@ export default function MunicipalityDashboard() {
                 </Card>
 
                 {/* Promotional Card */}
-                <Card className="border-0 bg-linear-to-br from-primary to-foreground text-white overflow-hidden relative">
+                <Card className="lg:w-73 lg:h-100 border-0 bg-linear-to-br from-primary to-foreground text-white overflow-hidden relative">
                     <CardContent className="p-6 relative z-10">
                         <h3 className="text-xl font-bold mb-3">
                             مرحباً بك في لوحة التحكم
@@ -339,10 +389,13 @@ export default function MunicipalityDashboard() {
                         <p className="text-sm text-white/90 mb-6">
                             راجع طلبات الأماكن الجديدة واتخذ القرارات المناسبة لخدمة المجتمع بشكل أفضل
                         </p>
-                        <Lottie
-                            animationData={Animation}
-                            loop={true}
-                        />
+                        <div className="flex justify-center">
+                            <Lottie
+                                animationData={Animation}
+                                loop={true}
+                                style={{ width: '200px', height: '200px' }}
+                            />
+                        </div>
                     </CardContent>
                     <div className="absolute bottom-0 left-0 w-full h-32 bg-linear-to-t from-secondary/30 to-transparent" />
                 </Card>

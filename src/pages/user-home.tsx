@@ -1,23 +1,18 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {  FileQuestion, Layers } from "lucide-react";
-import {useEffect, useState} from "react";
-import {useAdminTestsStore} from "@/stores/admin-tests-store.tsx";
-import {getAllTests} from "@/services/test-api.ts";
-import type {AdminTest} from "@/data/admin-test-schema.ts";
-import {startTestAttempt} from "@/services/test-attempt.ts";
-import {useNavigate} from "react-router-dom";
-import {useUserTestStore} from "@/stores/user-test-store.tsx";
+import { FileQuestion, Layers } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useAdminTestsStore } from "@/stores/admin-tests-store.tsx";
+import { getAllTests } from "@/services/test-api.ts";
+import type { AdminTest } from "@/data/admin-test-schema.ts";
+import { startTestAttempt } from "@/services/test-attempt.ts";
+import { useNavigate } from "react-router-dom";
+import { useUserTestStore } from "@/stores/user-test-store.tsx";
 import { HeroSection } from "@/components/dashboard/hero-section";
-import { CartesianGrid, Line, LineChart, XAxis } from "recharts";
-import {
-    ChartContainer,
-    ChartTooltip,
-    ChartTooltipContent,
-    type ChartConfig,
-} from "@/components/ui/chart";
-import { useAuthStore } from "@/stores/auth-store.tsx";
-
-import { useMemo } from "react";
+import { useAuthStore } from "@/stores/auth-store";
+import { DataTable } from "@/components/attempts-table/data-table";
+import { columns } from "@/components/attempts/columns";
+import { useTestAttemptsStore } from "@/stores/test-attempts-store";
+import { getAttemptsByStudent } from "@/services/test-attempt";
 
 export default function UserHome() {
 
@@ -25,9 +20,13 @@ export default function UserHome() {
 
     const { adminTestsResponse, setAdminTestsResponse } = useAdminTestsStore();
     const { setUserTestResponse } = useUserTestStore();
-    const {  accessToken } = useAuthStore();
+    const { accessToken } = useAuthStore();
     const userId = typeof accessToken?.userId === 'number' ? accessToken.userId : undefined;
-    console.log("testsResponse",adminTestsResponse);
+    console.log("testsResponse", adminTestsResponse);
+
+    // Attempts table state and logic
+    const [pageSize] = useState("3");
+    const { attempts, loading, error, setAttempts } = useTestAttemptsStore();
 
 
     const fetchTests = async () => {
@@ -40,6 +39,17 @@ export default function UserHome() {
         fetchTests();
     }, []);
 
+    // Fetch attempts data
+    useEffect(() => {
+        const fetchAttempts = async () => {
+            if (userId) {
+                const data = await getAttemptsByStudent(userId);
+                setAttempts(data);
+            }
+        };
+        fetchAttempts();
+    }, [userId, setAttempts]);
+
 
     const [startedTest, setStartedTest] = useState<number | undefined>();
     async function handleStartTest(testId: number) {
@@ -49,7 +59,7 @@ export default function UserHome() {
         }
         setStartedTest(testId);
         // Simulate navigation or test start
-        setTimeout(() => {}, 1000);
+        setTimeout(() => { }, 1000);
         const test = await startTestAttempt(testId, userId);
         console.log("test", test);
         console.log("testId", testId);
@@ -57,26 +67,16 @@ export default function UserHome() {
         navigate(`tests/${testId}/take/${test.id}`);
     }
 
- 
+
 
     // Calculate total questions for a test
-    const getTotalQuestions = (test:AdminTest) => {
+    const getTotalQuestions = (test: AdminTest) => {
         return test.sections.reduce((total, section) => {
             return total + section.questions.length;
         }, 0);
     };
 
 
-
-    // Tab state for chart/table
-    const [activeTab, setActiveTab] = useState<'chart' | 'table'>('chart');
-
-    // Dummy attempts data for table (replace with real data as needed)
-    const attemptsData = useMemo(() => [
-      { id: 1, test: 'اختبار الذكاء', date: '2024-01-10', score: 85 },
-      { id: 2, test: 'اختبار الشخصية', date: '2024-02-15', score: 92 },
-      { id: 3, test: 'اختبار القدرات', date: '2024-03-20', score: 78 },
-    ], []);
 
     return (
         <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
@@ -85,112 +85,19 @@ export default function UserHome() {
                     {/* Left Column - Hero & Stats */}
                     <div className="lg:col-span-2 order-1 lg:order-1 space-y-6">
                         <HeroSection />
-                        {/* Line Chart & Attempts Tabs */}
+                        {/* Attempts Table */}
                         <Card className="md:h-60 lg:h-100 flex flex-col">
-                            <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
-                                <div>
-                                    <CardTitle>الإحصائيات والنتائج</CardTitle>
-                                    <CardDescription>عرض الإحصائيات ومحاولات الاختبار الخاصة بك</CardDescription>
-                                </div>
-                                <div className="flex items-center gap-2 bg-muted/40 rounded-full p-1 w-fit">
-                                    <button
-                                        className={`px-5 py-1.5 rounded-full font-medium transition-all text-sm focus:outline-none
-                                            ${activeTab === 'chart' ? 'bg-primary text-white shadow' : 'text-foreground hover:bg-muted/70'}`}
-                                        onClick={() => setActiveTab('chart')}
-                                        type="button"
-                                    >
-                                        الإحصائيات
-                                    </button>
-                                    <button
-                                        className={`px-5 py-1.5 rounded-full font-medium transition-all text-sm focus:outline-none
-                                            ${activeTab === 'table' ? 'bg-primary text-white shadow' : 'text-foreground hover:bg-muted/70'}`}
-                                        onClick={() => setActiveTab('table')}
-                                        type="button"
-                                    >
-                                        المحاولات
-                                    </button>
-                                </div>
+                            <CardHeader>
+                                <CardTitle>المحاولات</CardTitle>
+                                <CardDescription>عرض محاولات الاختبار الخاصة بك</CardDescription>
                             </CardHeader>
-                            <CardContent className="flex-1 overflow-auto">
-                                {/* Tab Content */}
-                                {activeTab === 'chart' && (
-                                    <ChartContainer config={{
-                                        desktop: {
-                                            label: "Desktop",
-                                            color: "var(--chart-1)",
-                                        },
-                                        mobile: {
-                                            label: "Mobile",
-                                            color: "var(--chart-2)",
-                                        },
-                                    } satisfies ChartConfig}
-                                    className="h-70 w-full">
-                                        <LineChart
-                                            accessibilityLayer
-                                            data={[
-                                                { month: "January", desktop: 186, mobile: 80 },
-                                                { month: "February", desktop: 305, mobile: 200 },
-                                                { month: "March", desktop: 237, mobile: 120 },
-                                                { month: "April", desktop: 73, mobile: 190 },
-                                                { month: "May", desktop: 209, mobile: 130 },
-                                                { month: "June", desktop: 214, mobile: 140 },
-                                            ]}
-                                            margin={{
-                                                left: 12,
-                                                right: 12,
-                                            }}
-                                        >
-                                            <CartesianGrid vertical={false} />
-                                            <XAxis
-                                                dataKey="month"
-                                                tickLine={false}
-                                                axisLine={false}
-                                                tickMargin={8}
-                                                tickFormatter={(value) => value.slice(0, 3)}
-                                            />
-                                            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                                            <Line
-                                                dataKey="desktop"
-                                                type="monotone"
-                                                stroke="var(--color-desktop)"
-                                                strokeWidth={2}
-                                                dot={false}
-                                            />
-                                            <Line
-                                                dataKey="mobile"
-                                                type="monotone"
-                                                stroke="var(--color-mobile)"
-                                                strokeWidth={2}
-                                                dot={false}
-                                            />
-                                        </LineChart>
-                                    </ChartContainer>
-                                )}
-                                {activeTab === 'table' && (
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full text-sm text-foreground border-separate border-spacing-y-2">
-                                            <thead>
-                                                <tr>
-                                                    <th className="text-right px-4 py-2 font-semibold">الاختبار</th>
-                                                    <th className="text-right px-4 py-2 font-semibold">التاريخ</th>
-                                                    <th className="text-right px-4 py-2 font-semibold">النتيجة</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {attemptsData.map((attempt) => (
-                                                    <tr key={attempt.id} className="bg-card rounded-lg shadow-sm">
-                                                        <td className="px-4 py-2 rounded-s-lg">{attempt.test}</td>
-                                                        <td className="px-4 py-2">{attempt.date}</td>
-                                                        <td className="px-4 py-2 rounded-e-lg">
-                                                            <span className="inline-block bg-primary/10 text-primary font-bold px-3 py-1 rounded-full">
-                                                                {attempt.score}
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                            <CardContent className="flex-1">
+                                {loading ? (
+                                    <div className="text-center py-8">جاري التحميل...</div>
+                                ) : error ? (
+                                    <div className="text-red-500 text-center py-8">{error}</div>
+                                ) : (
+                                    <DataTable columns={columns} data={attempts} pageSize={parseInt(pageSize)} />
                                 )}
                             </CardContent>
                         </Card>
@@ -220,7 +127,7 @@ export default function UserHome() {
                                                 <CardTitle className="text-xl font-bold text-foreground leading-tight" dir="rtl">
                                                     {test.title}
                                                 </CardTitle>
-                                             
+
                                             </div>
                                         </CardHeader>
 
@@ -244,15 +151,15 @@ export default function UserHome() {
 
                                             {/* Action Buttons */}
                                             <div className="space-y-2 pt-2">
-                                               
+
                                                 <button
                                                     className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200
                                                                shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]
                                                                focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
                                                                ${isStarting
-                                                        ? 'bg-muted/50 cursor-not-allowed text-muted-foreground'
-                                                        : 'bg-accent hover:bg-accent/90 text-accent-foreground'
-                                                    }`}
+                                                            ? 'bg-muted/50 cursor-not-allowed text-muted-foreground'
+                                                            : 'bg-accent hover:bg-accent/90 text-accent-foreground'
+                                                        }`}
                                                     onClick={() => handleStartTest(test.id)}
                                                     disabled={isStarting}
                                                     dir="rtl"

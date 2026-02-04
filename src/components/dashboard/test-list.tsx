@@ -3,36 +3,43 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Outlet, useNavigate } from "react-router-dom"
+import { Outlet, useNavigate, useParams } from "react-router-dom"
 import { Pencil, Plus, Trash2, Layers, FileQuestion, Copy, Eye } from "lucide-react"
-import { useEffect } from "react"
-import { deleteTest, getAllTests, setTestActive, createVersion } from "@/services/test-api.ts"
+import { useEffect, useState } from "react"
+import { deleteTest, getAllTestsByBaseId, setTestActive, createVersion } from "@/services/test-api.ts"
 import { useAdminTestsStore } from "@/stores/admin-tests-store.tsx"
 import { useMetricsStore } from "@/stores/metrics-store.tsx"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Switch } from "@/components/ui/switch"
 import type { AdminTest } from "@/data/admin-test-schema.ts"
 import { toast } from "sonner"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function TestList() {
   const navigate = useNavigate()
+  const { baseTestId } = useParams<{ baseTestId: string }>()
+  const baseTestIdFromUrl = baseTestId ? parseInt(baseTestId) : undefined
+  
   const { adminTestsResponse, setAdminTestsResponse } = useAdminTestsStore()
   const { metrics } = useMetricsStore()
 
-  const fetchTests = async () => {
-    const res = await getAllTests()
-    console.log("res", res)
+  const fetchTestsByBaseId = async (baseId: number) => {
+    const res = await getAllTestsByBaseId(baseId)
+    console.log("res by baseId", res)
     setAdminTestsResponse(res)
   }
 
   useEffect(() => {
-    fetchTests()
-  }, [])
+    if (baseTestIdFromUrl) {
+      fetchTestsByBaseId(baseTestIdFromUrl)
+    }
+  }, [baseTestIdFromUrl])
 
   async function handleDelete(id: number) {
     await deleteTest(id)
-    const updatedTests = await getAllTests()
-    setAdminTestsResponse(updatedTests)
+    if (baseTestIdFromUrl) {
+      await fetchTestsByBaseId(baseTestIdFromUrl)
+    }
   }
 
   function handleEdit(testId: number) {
@@ -42,7 +49,9 @@ export default function TestList() {
   async function handleToggleActive(testId: number, checked: boolean) {
     console.log("i toggle active")
     await setTestActive(testId, checked)
-    await fetchTests()
+    if (baseTestIdFromUrl) {
+      await fetchTestsByBaseId(baseTestIdFromUrl)
+    }
   }
 
   async function handleDuplicate(testId: number) {
@@ -53,12 +62,14 @@ export default function TestList() {
       ).length
 
       await createVersion({
-        baseTestId: testId,
+        baseTestId: baseTestIdFromUrl ,
         sourceTestId: testId,
         versionName: `نسخة ${versionCount + 1}`
       })
 
-      await fetchTests()
+      if (baseTestIdFromUrl) {
+        await fetchTestsByBaseId(baseTestIdFromUrl)
+      }
       toast.success("تم نسخ الاختبار بنجاح")
     } catch (error) {
       console.error("Failed to duplicate test:", error)
@@ -96,14 +107,16 @@ export default function TestList() {
             <div>
               <h2 className="text-3xl font-bold tracking-tight text-foreground">الاختبارات</h2>
             </div>
-            <Button
-              onClick={handleAddTest}
-              className="gap-2 shadow-sm hover:shadow transition-shadow"
-              size="default"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">إضافة اختبار</span>
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleAddTest}
+                className="gap-2 shadow-sm hover:shadow transition-shadow"
+                size="default"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">إضافة اختبار</span>
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-4">

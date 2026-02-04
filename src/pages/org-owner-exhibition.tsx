@@ -5,6 +5,7 @@ import Stepper from "@/components/exhibition/stepper";
 import Municipality from "@/components/exhibition/view-municipalities";
 import ManageParticipants from "@/components/exhibition/manage-participants";
 import { ExhibitionConfirmedView } from "@/components/exhibition/exhibition-confirmed-view";
+import { ExhibitionActiveView } from "@/components/exhibition/exhibition-active-view";
 import { OrgExhibitionFeedbackView } from "@/components/exhibition/org-exhibition-feedback-view";
 import ExhibitionRightPanel from "@/components/exhibition/exhibition-right-panel";
 import { exhibitionService } from "@/services/exhibitionService";
@@ -16,18 +17,18 @@ const OrgOwnerExhibition = () => {
     const [exhibition, setExhibition] = useState<ExhibitionResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [currentStep, setCurrentStep] = useState<number>(1);
-    const totalSteps = 4;
+    const totalSteps = 5;
 
     // Fetch exhibition data
     useEffect(() => {
         const fetchExhibition = async () => {
             if (!id) return;
-            
+
             try {
                 setIsLoading(true);
                 const data = await exhibitionService.getExhibitionById(parseInt(id));
                 setExhibition(data);
-                
+
                 // Set initial step based on exhibition status
                 const initialStep = getInitialStepFromStatus(data.status);
                 setCurrentStep(initialStep);
@@ -44,8 +45,10 @@ const OrgOwnerExhibition = () => {
     // Determine which step to show based on exhibition status
     const getInitialStepFromStatus = (status: ExhibitionStatus): number => {
         if (status === 'COMPLETED') {
-            return 4; // Show step 4 for completed exhibitions (feedback)
-        } else if (status === 'CONFIRMED' || status === 'ACTIVE') {
+            return 5; // Show step 5 for completed exhibitions (feedback)
+        } else if (status === 'ACTIVE') {
+            return 4; // Show step 4 for active exhibitions (student management)
+        } else if (status === 'CONFIRMED') {
             return 3; // Show step 3 for confirmed exhibitions (financial & schedule)
         } else if (status === 'VENUE_APPROVED' || status === 'PLANNING') {
             return 2; // Show step 2 for venue approved or planning
@@ -67,13 +70,18 @@ const OrgOwnerExhibition = () => {
             return ['VENUE_APPROVED', 'PLANNING', 'CONFIRMED', 'ACTIVE', 'COMPLETED'].includes(status);
         }
 
-        // Step 3 is enabled when status is PLANNING (to confirm), CONFIRMED, ACTIVE, or COMPLETED
+        // Step 3 is enabled when status is CONFIRMED, ACTIVE, or COMPLETED
         if (step === 3) {
-            return ['PLANNING', 'CONFIRMED', 'ACTIVE', 'COMPLETED'].includes(status);
+            return ['CONFIRMED', 'ACTIVE', 'COMPLETED'].includes(status);
         }
 
-        // Step 4 is enabled only when status is COMPLETED
+        // Step 4 is enabled when status is ACTIVE or COMPLETED
         if (step === 4) {
+            return ['ACTIVE', 'COMPLETED'].includes(status);
+        }
+
+        // Step 5 is enabled only when status is COMPLETED
+        if (step === 5) {
             return status === 'COMPLETED';
         }
 
@@ -104,6 +112,13 @@ const OrgOwnerExhibition = () => {
                     />
                 );
             case 4:
+                return (
+                    <ExhibitionActiveView
+                        exhibitionId={parseInt(id!)}
+                        exhibition={exhibition}
+                    />
+                );
+            case 5:
                 return <OrgExhibitionFeedbackView exhibitionId={parseInt(id!)} />;
             default:
                 return null;
@@ -137,13 +152,12 @@ const OrgOwnerExhibition = () => {
                             <button
                                 onClick={() => handleStepClick(step)}
                                 disabled={!isStepEnabled(step)}
-                                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                                    step === currentStep
-                                        ? "bg-primary text-primary-foreground shadow-md"
-                                        : isStepEnabled(step)
+                                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${step === currentStep
+                                    ? "bg-primary text-primary-foreground shadow-md"
+                                    : isStepEnabled(step)
                                         ? "bg-card text-foreground border-2 border-border hover:bg-muted cursor-pointer"
                                         : "bg-muted/50 text-muted-foreground border-2 border-border cursor-not-allowed opacity-50"
-                                }`}
+                                    }`}
                             >
                                 {step}
                             </button>
@@ -161,25 +175,25 @@ const OrgOwnerExhibition = () => {
                 // animate={{ opacity: 1, scale: 1 }}
                 // transition={{ duration: 0.3, ease: "easeOut" }}
                 dir="rtl"
-                className="bg-card w-full relative flex flex-col lg:flex-row flex-1"
+                className="bg-card w-full relative flex flex-col lg:flex-row flex-1 overflow-hidden"
             >
 
 
-                {/* Left Panel - Hidden on Mobile/Tablet */}
+                {/* Left Panel - Hidden on Mobile/Tablet - Fixed Height */}
                 <ExhibitionRightPanel currentStep={currentStep} />
 
 
                 {/* Vertical Stepper - Desktop Only - Middle Position */}
                 <div className="hidden lg:block absolute left-[70%] top-0 bottom-0 z-20">
-                    <Stepper 
-                        currentStep={currentStep} 
+                    <Stepper
+                        currentStep={currentStep}
                         totalSteps={totalSteps}
                         isStepEnabled={isStepEnabled}
                         onStepClick={handleStepClick}
                     />
                 </div>
 
-                {/* Right Panel - Dynamic Content */}
+                {/* Right Panel - Dynamic Content - Scrollable */}
                 <div className="lg:w-[70%] w-full p-4 lg:p-6 flex flex-col overflow-y-auto scrollbar-hide">
                     {exhibition && renderStepContent()}
                 </div>

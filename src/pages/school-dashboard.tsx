@@ -5,27 +5,52 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Building2, FileText, Calendar, TrendingUp, TrendingDown, Users, Loader2 } from "lucide-react";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Loader2, Calendar, FileText, Users } from "lucide-react";
+import Lottie from "lottie-react";
+import TotalRequestsAnimation from "@/assets/animations/total-requests-animation.json";
+import PendingRequestsAnimation from "@/assets/animations/waiting_requests_animation.json";
+import ApprovedRequestsAnimation from "@/assets/animations/accepted-requests-animation.json";
+import RejectedRequestsAnimation from "@/assets/animations/rejected-requests-animation.json";
+import BackToSchoolAnimation from "@/assets/animations/back_to_school.json";
+import { RadialChart } from "@/components/charts/radial-chart";
+import type { ChartConfig } from "@/components/ui/chart";
 import { useSchoolParticipationStore } from "@/stores/school-participation-store";
 import { useSchoolStore } from "@/stores/school-store";
 import { useExhibitionStore } from "@/stores/exhibition-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { schoolParticipationService } from "@/services/school-participation-service";
+import { boothService } from "@/services/booth-service";
 import type { SchoolParticipationStatus, SchoolParticipationResponse } from "@/types/school-participation";
+import type { BoothResponse } from "@/types/booth";
 import { toast } from "sonner";
 
 export default function SchoolDashboard() {
     const { accessToken } = useAuthStore();
     const { ownerSchools, fetchSchoolsByOwnerId } = useSchoolStore();
-    const { schoolParticipations, fetchParticipationsBySchoolId, isLoadingSchoolParticipations } = useSchoolParticipationStore();
+    const { schoolParticipations, fetchParticipationsBySchoolIds, isLoadingSchoolParticipations } = useSchoolParticipationStore();
     const { exhibitions, fetchAllExhibitions } = useExhibitionStore();
-    
+
     const [respondDialogOpen, setRespondDialogOpen] = useState(false);
     const [selectedParticipation, setSelectedParticipation] = useState<SchoolParticipationResponse | null>(null);
     const [expectedStudents, setExpectedStudents] = useState<string>("");
     const [isResponding, setIsResponding] = useState(false);
-    const [isConfirming, setIsConfirming] = useState(false);
     const [isFinalizing, setIsFinalizing] = useState(false);
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [participationToCancel, setParticipationToCancel] = useState<SchoolParticipationResponse | null>(null);
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [boothDialogOpen, setBoothDialogOpen] = useState(false);
+    const [selectedExhibitionBooths, setSelectedExhibitionBooths] = useState<BoothResponse[]>([]);
+    const [isLoadingBooths, setIsLoadingBooths] = useState(false);
 
     // Fetch owner's schools on mount
     useEffect(() => {
@@ -37,11 +62,10 @@ export default function SchoolDashboard() {
     // Fetch participations when schools are loaded
     useEffect(() => {
         if (ownerSchools.length > 0) {
-            ownerSchools.forEach(school => {
-                fetchParticipationsBySchoolId(school.id);
-            });
+            const schoolIds = ownerSchools.map(school => school.id);
+            fetchParticipationsBySchoolIds(schoolIds);
         }
-    }, [ownerSchools, fetchParticipationsBySchoolId]);
+    }, [ownerSchools, fetchParticipationsBySchoolIds]);
 
     // Fetch all exhibitions
     useEffect(() => {
@@ -53,9 +77,27 @@ export default function SchoolDashboard() {
         return new Date(deadline) < new Date();
     };
 
-    const getExhibitionName = (exhibitionId: number): string => {
-        const exhibition = exhibitions.find(e => e.id === exhibitionId);
-        return exhibition ? exhibition.title : `معرض #${exhibitionId}`;
+    const getExhibitionName = (participation: SchoolParticipationResponse): string => {
+        // Use enriched data first, fallback to looking up in store
+        if (participation.exhibitionTitle) {
+            return participation.exhibitionTitle;
+        }
+        const exhibition = exhibitions.find(e => e.id === participation.exhibitionId);
+        return exhibition ? exhibition.title : `معرض #${participation.exhibitionId}`;
+    };
+
+    const getExhibitionStartDate = (participation: SchoolParticipationResponse): string | null => {
+        // Use enriched data first, fallback to looking up in store
+        if (participation.exhibitionStartDate) {
+            return participation.exhibitionStartDate;
+        }
+        const exhibition = exhibitions.find(e => e.id === participation.exhibitionId);
+        return exhibition?.startDate || null;
+    };
+
+    const getSchoolName = (participation: SchoolParticipationResponse): string => {
+        // Use enriched data first, fallback to existing schoolName
+        return participation.school?.name || participation.schoolName;
     };
 
     const getStatusLabel = (status: SchoolParticipationStatus) => {
@@ -115,12 +157,11 @@ export default function SchoolDashboard() {
             );
             toast.success(accept ? "تم قبول الدعوة بنجاح" : "تم رفض الدعوة");
             setRespondDialogOpen(false);
-            
+
             // Refresh participations
             if (ownerSchools.length > 0) {
-                ownerSchools.forEach(school => {
-                    fetchParticipationsBySchoolId(school.id);
-                });
+                const schoolIds = ownerSchools.map(school => school.id);
+                fetchParticipationsBySchoolIds(schoolIds);
             }
         } catch (error) {
             console.error('Failed to respond to invitation:', error);
@@ -130,132 +171,157 @@ export default function SchoolDashboard() {
         }
     };
 
-    const handleConfirm = async (participationId: number) => {
-        try {
-            setIsConfirming(true);
-            await schoolParticipationService.confirmSchool(participationId);
-            toast.success("تم تأكيد المشاركة بنجاح");
-            
-            // Refresh participations
-            if (ownerSchools.length > 0) {
-                ownerSchools.forEach(school => {
-                    fetchParticipationsBySchoolId(school.id);
-                });
-            }
-        } catch (error) {
-            console.error('Failed to confirm participation:', error);
-            toast.error("فشل في تأكيد المشاركة");
-        } finally {
-            setIsConfirming(false);
-        }
-    };
-
     const handleFinalize = async (participationId: number) => {
         try {
             setIsFinalizing(true);
             await schoolParticipationService.finalizeParticipation(participationId);
             toast.success("تم إتمام المشاركة بنجاح");
-            
+
             // Refresh participations
             if (ownerSchools.length > 0) {
-                ownerSchools.forEach(school => {
-                    fetchParticipationsBySchoolId(school.id);
-                });
+                const schoolIds = ownerSchools.map(school => school.id);
+                fetchParticipationsBySchoolIds(schoolIds);
             }
         } catch (error) {
             console.error('Failed to finalize participation:', error);
-            toast.error("فشل في إتمام المشاركة");
+
+            // Check if failure is due to exhibition not being confirmed
+            const participation = schoolParticipations.find(p => p.id === participationId);
+            const exhibition = participation ? exhibitions.find(e => e.id === participation.exhibitionId) : null;
+
+            if (exhibition && exhibition.status !== 'CONFIRMED' && exhibition.status !== 'ACTIVE' && exhibition.status !== 'COMPLETED') {
+                toast.error("لا يمكنك إتمام المشاركة قبل تأكيد المعرض");
+            } else {
+                toast.error("فشل في إتمام المشاركة");
+            }
         } finally {
             setIsFinalizing(false);
+        }
+    };
+    const handleCancelClick = (participation: SchoolParticipationResponse) => {
+        setParticipationToCancel(participation);
+        setCancelDialogOpen(true);
+    };
+
+    const handleConfirmCancel = async () => {
+        if (!participationToCancel) return;
+
+        setIsCancelling(true);
+        try {
+            await schoolParticipationService.cancelParticipation(participationToCancel.id);
+            toast.success("تم إلغاء المشاركة بنجاح");
+
+            // Refresh participations
+            if (ownerSchools.length > 0) {
+                const schoolIds = ownerSchools.map(school => school.id);
+                fetchParticipationsBySchoolIds(schoolIds);
+            }
+            setCancelDialogOpen(false);
+        } catch (error) {
+            console.error('Failed to cancel participation:', error);
+            toast.error("فشل في إلغاء المشاركة");
+        } finally {
+            setIsCancelling(false);
+            setParticipationToCancel(null);
+        }
+    };
+
+    const handleViewBooths = async (exhibitionId: number) => {
+        setIsLoadingBooths(true);
+        setBoothDialogOpen(true);
+        try {
+            const booths = await boothService.getBoothsByExhibition(exhibitionId);
+            setSelectedExhibitionBooths(booths);
+        } catch (error) {
+            console.error('Failed to fetch booths:', error);
+            toast.error("فشل في تحميل الأجنحة");
+            setSelectedExhibitionBooths([]);
+        } finally {
+            setIsLoadingBooths(false);
         }
     };
 
     // Calculate stats
     const totalParticipations = schoolParticipations.length;
     const confirmedParticipations = schoolParticipations.filter(p => p.status === 'CONFIRMED' || p.status === 'FINALIZED').length;
-    const totalExpectedStudents = schoolParticipations
-        .filter(p => p.expectedStudents !== null)
-        .reduce((sum, p) => sum + (p.expectedStudents || 0), 0);
-
-    // Mock data for stats
-    const stats = [
-        {
-            title: "إجمالي المشاركات",
-            value: totalParticipations.toString(),
-            change: "+0%",
-            isPositive: true,
-            icon: FileText,
-            color: "text-accent",
-            bgColor: "bg-accent/10"
-        },
-        {
-            title: "المعارض النشطة",
-            value: schoolParticipations.filter(p => p.status !== 'CANCELLED' && p.status !== 'REJECTED').length.toString(),
-            change: "+0%",
-            isPositive: true,
-            icon: Building2,
-            color: "text-primary",
-            bgColor: "bg-primary/10"
-        },
-        {
-            title: "الطلاب المتوقعون",
-            value: totalExpectedStudents.toString(),
-            change: "+0%",
-            isPositive: true,
-            icon: Users,
-            color: "text-foreground",
-            bgColor: "bg-foreground/10"
-        },
-        {
-            title: "المشاركات المؤكدة",
-            value: totalParticipations > 0 ? `${Math.round((confirmedParticipations / totalParticipations) * 100)}%` : "0%",
-            change: "0%",
-            isPositive: false,
-            icon: Calendar,
-            color: "text-muted",
-            bgColor: "bg-muted/20"
-        }
-    ];
+    const registeredParticipations = schoolParticipations.filter(p => p.status === 'REGISTERED').length;
+    const rejectedParticipations = schoolParticipations.filter(p => p.status === 'REJECTED' || p.status === 'CANCELLED').length;
 
     return (
         <div className="bg-background p-6 flex flex-col min-h-screen lg:min-h-0 lg:h-[650px] lg:overflow-hidden" dir="rtl">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-                {stats.map((stat, index) => {
-                    const Icon = stat.icon;
-                    return (
-                        <Card key={index} className="border-border">
-                            <CardContent className="p-4">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                        <p className="text-xs text-muted-foreground mb-1">{stat.title}</p>
-                                        <h3 className="text-2xl font-bold text-foreground mb-1">{stat.value}</h3>
-                                        <div className="flex items-center gap-1">
-                                            <span className={`text-sm font-medium ${stat.isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                                                {stat.change}
-                                            </span>
-                                            {stat.isPositive ? (
-                                                <TrendingUp className="w-4 h-4 text-green-600" />
-                                            ) : (
-                                                <TrendingDown className="w-4 h-4 text-red-600" />
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className={`${stat.bgColor} ${stat.color} p-2 rounded-full`}>
-                                        <Icon className="w-5 h-5" />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    );
-                })}
+            {/* Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {/* Total Participations Card */}
+                <Card className="flex flex-col items-center">
+                    <CardContent className="pt-3 pb-2 px-3">
+                        <div className="relative flex items-center justify-center w-24 h-24">
+                            <Lottie animationData={TotalRequestsAnimation} loop={true} style={{ width: '80px', height: '80px' }} />
+                        </div>
+                        <div className="mt-1 text-center">
+                            <div className="text-xs font-medium text-muted-foreground">
+                                إجمالي المشاركات - {totalParticipations}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Registered Participations */}
+                <RadialChart
+                    title="بانتظار القبول"
+                    value={registeredParticipations}
+                    maxValue={totalParticipations}
+                    fillColor="var(--chart-2)"
+                    config={{
+                        value: {
+                            label: "Participations",
+                            color: "var(--chart-2)",
+                        },
+                    } satisfies ChartConfig}
+                    animationData={PendingRequestsAnimation}
+                    innerRadius={40}
+                    outerRadius={50}
+                />
+
+                {/* Confirmed Participations */}
+                <RadialChart
+                    title="المشاركات المؤكدة"
+                    value={confirmedParticipations}
+                    maxValue={totalParticipations}
+                    fillColor="var(--chart-3)"
+                    config={{
+                        value: {
+                            label: "Participations",
+                            color: "var(--chart-3)",
+                        },
+                    } satisfies ChartConfig}
+                    animationData={ApprovedRequestsAnimation}
+                    innerRadius={40}
+                    outerRadius={50}
+                />
+
+                {/* Rejected Participations */}
+                <RadialChart
+                    title="مرفوض"
+                    value={rejectedParticipations}
+                    maxValue={totalParticipations}
+                    fillColor="var(--chart-4)"
+                    config={{
+                        value: {
+                            label: "Participations",
+                            color: "var(--chart-4)",
+                        },
+                    } satisfies ChartConfig}
+                    animationData={RejectedRequestsAnimation}
+                    innerRadius={40}
+                    outerRadius={50}
+                />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:flex-1 lg:overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:flex-1 lg:overflow-hidden">
                 {/* Participations Table */}
-                <Card className="lg:col-span-2 border-border flex flex-col lg:overflow-hidden">
+                <Card className="lg:col-span-3 border-border flex flex-col lg:overflow-hidden">
                     <CardHeader>
-                        <CardTitle className="text-foreground">المشاركات الأخيرة</CardTitle>
+                        <CardTitle className="text-foreground">الدعوات</CardTitle>
                     </CardHeader>
                     <CardContent className="flex-1 lg:overflow-auto">
                         {isLoadingSchoolParticipations ? (
@@ -273,10 +339,12 @@ export default function SchoolDashboard() {
                                     <thead>
                                         <tr className="border-b border-border">
                                             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">المعرض</th>
+                                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">تاريخ البدء</th>
+                                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">المدرسة</th>
                                             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">الحالة</th>
                                             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">عدد الطلاب</th>
-                                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">تاريخ الدعوة</th>
                                             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">الموعد النهائي</th>
+                                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">الأجنحة</th>
                                             <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">الإجراءات</th>
                                         </tr>
                                     </thead>
@@ -284,7 +352,13 @@ export default function SchoolDashboard() {
                                         {schoolParticipations.map((participation) => (
                                             <tr key={participation.id} className="border-b border-border last:border-0">
                                                 <td className="py-4 px-4 text-sm font-medium text-foreground">
-                                                    {getExhibitionName(participation.exhibitionId)}
+                                                    {getExhibitionName(participation)}
+                                                </td>
+                                                <td className="py-4 px-4 text-sm text-muted-foreground">
+                                                    {getExhibitionStartDate(participation) ? new Date(getExhibitionStartDate(participation)!).toLocaleDateString('en-US') : '-'}
+                                                </td>
+                                                <td className="py-4 px-4 text-sm text-foreground">
+                                                    {getSchoolName(participation)}
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     <Badge className={getStatusColor(participation.status)}>
@@ -294,18 +368,14 @@ export default function SchoolDashboard() {
                                                 <td className="py-4 px-4 text-sm text-foreground">
                                                     {participation.expectedStudents || '-'}
                                                 </td>
-                                                <td className="py-4 px-4 text-sm text-muted-foreground">
-                                                    {participation.invitedAt ? new Date(participation.invitedAt).toLocaleDateString('ar') : '-'}
-                                                </td>
                                                 <td className="py-4 px-4">
                                                     {participation.responseDeadline ? (
                                                         <div className="flex flex-col gap-1">
-                                                            <span className={`text-sm ${
-                                                                isDeadlinePassed(participation.responseDeadline) 
-                                                                    ? 'text-red-600 font-semibold' 
-                                                                    : 'text-muted-foreground'
-                                                            }`}>
-                                                                {new Date(participation.responseDeadline).toLocaleDateString('ar')}
+                                                            <span className={`text-sm ${isDeadlinePassed(participation.responseDeadline)
+                                                                ? 'text-red-600 font-semibold'
+                                                                : 'text-muted-foreground'
+                                                                }`}>
+                                                                {new Date(participation.responseDeadline).toLocaleDateString('en-US')}
                                                             </span>
                                                             {isDeadlinePassed(participation.responseDeadline) && (
                                                                 <Badge variant="destructive" className="text-xs w-fit">
@@ -318,6 +388,15 @@ export default function SchoolDashboard() {
                                                     )}
                                                 </td>
                                                 <td className="py-4 px-4">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => handleViewBooths(participation.exhibitionId)}
+                                                    >
+                                                        عرض
+                                                    </Button>
+                                                </td>
+                                                <td className="py-4 px-4">
                                                     <div className="flex gap-2">
                                                         {participation.status === 'INVITED' && (
                                                             <Button
@@ -328,22 +407,34 @@ export default function SchoolDashboard() {
                                                                 الرد على الدعوة
                                                             </Button>
                                                         )}
-                                                        {participation.status === 'ACCEPTED' && (
-                                                            <Button
-                                                                size="sm"
-                                                                onClick={() => handleConfirm(participation.id)}
-                                                                disabled={isConfirming}
-                                                            >
-                                                                {isConfirming ? (
-                                                                    <>
-                                                                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                                                                        جاري...
-                                                                    </>
-                                                                ) : (
-                                                                    'تأكيد المشاركة'
-                                                                )}
-                                                            </Button>
-                                                        )}
+                                                        {participation.status === 'ACCEPTED' && (() => {
+                                                            const exhibition = exhibitions.find(e => e.id === participation.exhibitionId);
+                                                            const isExhibitionConfirmed = exhibition?.status === 'CONFIRMED' || exhibition?.status === 'ACTIVE' || exhibition?.status === 'COMPLETED';
+                                                            
+                                                            return (
+                                                                <div className="flex flex-col gap-1">
+                                                                    <Button
+                                                                        size="sm"
+                                                                        onClick={() => handleFinalize(participation.id)}
+                                                                        disabled={isFinalizing || !isExhibitionConfirmed}
+                                                                    >
+                                                                        {isFinalizing ? (
+                                                                            <>
+                                                                                <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                                                                                جاري...
+                                                                            </>
+                                                                        ) : (
+                                                                            'تأكيد المشاركة'
+                                                                        )}
+                                                                    </Button>
+                                                                    {!isExhibitionConfirmed && (
+                                                                        <span className="text-xs text-amber-600">
+                                                                            انتظر تأكيد المعرض
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })()}
                                                         {participation.status === 'CONFIRMED' && (
                                                             <Button
                                                                 size="sm"
@@ -363,6 +454,25 @@ export default function SchoolDashboard() {
                                                         {(participation.status === 'FINALIZED' || participation.status === 'CANCELLED' || participation.status === 'REJECTED') && (
                                                             <span className="text-sm text-muted-foreground">-</span>
                                                         )}
+                                                        {participation.status !== 'CANCELLED' && participation.status !== 'REJECTED' && (() => {
+                                                            const exhibition = exhibitions.find(e => e.id === participation.exhibitionId);
+                                                            const isExhibitionActive = exhibition?.status === 'ACTIVE' || exhibition?.status === 'COMPLETED';
+
+                                                            if (!isExhibitionActive) {
+                                                                return (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                        onClick={() => handleCancelClick(participation)}
+                                                                        disabled={isCancelling}
+                                                                    >
+                                                                        إلغاء
+                                                                    </Button>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })()}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -375,41 +485,22 @@ export default function SchoolDashboard() {
                 </Card>
 
                 {/* Quick Info Card */}
-                <Card className="border-border">
-                    <CardHeader>
-                        <CardTitle className="text-foreground text-base">معلومات سريعة</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-start gap-3 p-3 bg-muted/20 rounded-lg">
-                            <div className="bg-primary/10 text-primary p-2 rounded-lg">
-                                <Calendar className="w-4 h-4" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-foreground mb-1">المعارض القادمة</p>
-                                <p className="text-xs text-muted-foreground">لا توجد معارض قادمة</p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-3 p-3 bg-muted/20 rounded-lg">
-                            <div className="bg-accent/10 text-accent p-2 rounded-lg">
-                                <FileText className="w-4 h-4" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-foreground mb-1">الدعوات المعلقة</p>
-                                <p className="text-xs text-muted-foreground">لا توجد دعوات معلقة</p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-3 p-3 bg-muted/20 rounded-lg">
-                            <div className="bg-foreground/10 text-foreground p-2 rounded-lg">
-                                <Users className="w-4 h-4" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-foreground mb-1">إجمالي الطلاب</p>
-                                <p className="text-xs text-muted-foreground">0 طالب مسجل</p>
-                            </div>
+                <Card className="border-0 p-0 bg-gradient-to-br from-primary to-foreground text-white overflow-hidden relative h-fit">
+                    <CardContent className="p-4 relative z-10">
+                        <h3 className="text-xl font-bold mb-3">
+                            مرحباً بك في لوحة التحكم
+                        </h3>
+                        <p className="text-sm text-white/90 mb-6">
+                            راجع الدعوات الجديدة واستجب لمشاركات المعارض
+                        </p>
+                        <div className="max-h-[250px]">
+                            <Lottie
+                                animationData={BackToSchoolAnimation}
+                                loop={true}
+                            />
                         </div>
                     </CardContent>
+                    <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-secondary/30 to-transparent" />
                 </Card>
             </div>
 
@@ -419,10 +510,19 @@ export default function SchoolDashboard() {
                     <DialogHeader className="text-right">
                         <DialogTitle className="text-right">الرد على دعوة المعرض</DialogTitle>
                         <DialogDescription className="text-right">
-                            {selectedParticipation && `المعرض: ${getExhibitionName(selectedParticipation.exhibitionId)}`}
+                            {selectedParticipation && (
+                                <div className="space-y-1">
+                                    <div>المعرض: {getExhibitionName(selectedParticipation)}</div>
+                                    {getExhibitionStartDate(selectedParticipation) && (
+                                        <div className="text-xs">
+                                            تاريخ البدء: {new Date(getExhibitionStartDate(selectedParticipation)!).toLocaleDateString('en-US')}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="space-y-4 mt-4" dir="rtl">
                         <div className="space-y-2">
                             <Label htmlFor="expectedStudents" className="text-right block">
@@ -479,6 +579,96 @@ export default function SchoolDashboard() {
                             ) : (
                                 'قبول'
                             )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Cancel Confirmation Dialog */}
+            <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+                <AlertDialogContent dir="rtl">
+                    <AlertDialogHeader className="text-right">
+                        <AlertDialogTitle>هل أنت متأكد من إلغاء المشاركة؟</AlertDialogTitle>
+                        <AlertDialogDescription className="text-right">
+                            هذا الإجراء لا يمكن التراجع عنه. سيتم إلغاء مشاركة مدرستك في المعرض.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="flex-row-reverse gap-2">
+                        <AlertDialogCancel className="mt-0">تراجع</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleConfirmCancel();
+                            }}
+                            className="bg-accent text-accent-foreground hover:bg-accent/80"
+                            disabled={isCancelling}
+                        >
+                            {isCancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : 'نعم، قم بالإلغاء'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Booths Dialog */}
+            <Dialog open={boothDialogOpen} onOpenChange={setBoothDialogOpen}>
+                <DialogContent className="sm:max-w-[600px]" dir="rtl">
+                    <DialogHeader className="text-right">
+                        <DialogTitle className="text-right">الأجنحة المتاحة</DialogTitle>
+                        <DialogDescription className="text-right">
+                            قائمة بجميع الأجنحة في المعرض
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="mt-4" dir="rtl">
+                        {isLoadingBooths ? (
+                            <div className="flex items-center justify-center py-8">
+                                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                                <span className="mr-3 text-muted-foreground">جاري تحميل الأجنحة...</span>
+                            </div>
+                        ) : selectedExhibitionBooths.length === 0 ? (
+                            <div className="text-center py-8">
+                                <p className="text-muted-foreground">لا توجد أجنحة متاحة</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-border">
+                                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">رقم الجناح</th>
+                                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">المنطقة</th>
+                                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">النوع</th>
+                                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">المدة (دقائق)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {selectedExhibitionBooths.map((booth) => (
+                                            <tr key={booth.id} className="border-b border-border last:border-0">
+                                                <td className="py-3 px-4 text-sm text-foreground">
+                                                    {booth.boothNumber}
+                                                </td>
+                                                <td className="py-3 px-4 text-sm text-foreground">
+                                                    {booth.zone}
+                                                </td>
+                                                <td className="py-3 px-4 text-sm text-foreground">
+                                                    {booth.type === 'UNIVERSITY' ? 'جامعة' : 'مزود نشاط'}
+                                                </td>
+                                                <td className="py-3 px-4 text-sm text-muted-foreground">
+                                                    {booth.durationMinutes || '-'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+
+                    <DialogFooter className="mt-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => setBoothDialogOpen(false)}
+                        >
+                            إغلاق
                         </Button>
                     </DialogFooter>
                 </DialogContent>

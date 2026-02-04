@@ -247,7 +247,7 @@ export default function BaseTest() {
                                                         <MoreVertical className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="start" dir="rtl">
+                                                <DropdownMenuContent align="start">
                                                     <DropdownMenuItem
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -324,8 +324,8 @@ export default function BaseTest() {
                                                             <MoreVertical className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="start" className="w-30" dir="rtl" asChild>
-                                                        <div dir="rtl">
+                                                    <DropdownMenuContent align="start" className="w-30">
+                                                        <div>
                                                             <DropdownMenuItem
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();

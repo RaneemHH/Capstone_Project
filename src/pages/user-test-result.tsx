@@ -170,6 +170,25 @@ export default function UserTestResult() {
     useEffect(() => {
         if (location.state?.personalityResult) {
             setResult(location.state.personalityResult);
+            
+            // Log scoring details for verification
+            const personalityResult = location.state.personalityResult;
+            const totalScore = Object.values(personalityResult.metricScores).reduce((sum: number, score: number) => sum + score, 0);
+            
+            console.log("=== Test Result Scoring Details ===");
+            console.log("Individual Metric Scores:", personalityResult.metricScores);
+            console.log("Total Score:", totalScore);
+            console.log("Top 3 Metrics:", {
+                first: personalityResult.firstMetric,
+                second: personalityResult.secondMetric,
+                third: personalityResult.thirdMetric
+            });
+            console.log("Score Breakdown:");
+            Object.entries(personalityResult.metricScores).forEach(([metric, score]) => {
+                const percentage = ((score as number) / totalScore * 100).toFixed(1);
+                console.log(`  ${metric}: ${score} points (${percentage}%)`);
+            });
+            console.log("===================================");
         }
         if (location.state?.attemptId) {
             setAttemptId(location.state.attemptId);
@@ -225,23 +244,24 @@ export default function UserTestResult() {
         return Math.round((score / totalScore) * 100);
     };
 
-    const letterData = [
-        { 
-            letter: result.firstMetric, 
-            score: result.metricScores[result.firstMetric] || 0,
-            gradient: "from-primary to-blue-500"
-        },
-        { 
-            letter: result.secondMetric, 
-            score: result.metricScores[result.secondMetric] || 0,
-            gradient: "from-accent to-orange-500"
-        },
-        { 
-            letter: result.thirdMetric, 
-            score: result.metricScores[result.thirdMetric] || 0,
-            gradient: "from-muted to-green-500"
-        }
+    // Get all metrics sorted by score
+    const allMetrics = Object.entries(result.metricScores)
+        .sort(([, scoreA], [, scoreB]) => scoreB - scoreA);
+    
+    const gradients = [
+        "from-primary to-blue-500",
+        "from-accent to-orange-500",
+        "from-purple-500 to-pink-500",
+        "from-green-500 to-emerald-500",
+        "from-yellow-500 to-amber-500",
+        "from-red-500 to-rose-500"
     ];
+    
+    const letterData = allMetrics.map(([letter, score], index) => ({
+        letter,
+        score,
+        gradient: gradients[index] || "from-gray-500 to-slate-500"
+    }));
 
     return (
         <div className="min-h-screen bg-background py-12 px-4">
@@ -258,8 +278,8 @@ export default function UserTestResult() {
                 {/* Three Letters Display */}
                 <Card className="border-2 border-primary/20 shadow-xl">
                     <CardContent className="p-8">
-                        <div className="flex justify-center gap-6 mb-8">
-                            {letterData.map((data, index) => (
+                        <div className="flex justify-center gap-6 mb-8 flex-wrap">
+                            {letterData.slice(0, 3).map((data, index) => (
                                 <div 
                                     key={index}
                                     className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${data.gradient} flex items-center justify-center shadow-lg transform transition-all duration-300 hover:scale-110 animate-in fade-in zoom-in`}
@@ -270,7 +290,7 @@ export default function UserTestResult() {
                             ))}
                         </div>
 
-                        {/* Score Sliders */}
+                        {/* Score Sliders for all 6 metrics */}
                         <div className="space-y-6">
                             {letterData.map((data, index) => {
                                 const percentage = getPercentage(data.score);
@@ -297,9 +317,6 @@ export default function UserTestResult() {
                                                 style={{ width: `${percentage}%` }}
                                             />
                                         </div>
-                                        <p className="text-sm text-muted-foreground text-right">
-                                            النتيجة: {data.score} من {totalScore}
-                                        </p>
                                     </div>
                                 );
                             })}

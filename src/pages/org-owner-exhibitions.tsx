@@ -4,7 +4,6 @@ import {
     Calendar,
     Search,
     Building2,
-    CheckCircle2,
     Clock,
     Plus,
     ArrowUpDown,
@@ -23,7 +22,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -37,6 +35,10 @@ import { CreateExhibitionSheet } from "@/components/exhibition/create-exhibition
 import { useExhibitionStore } from "@/stores/exhibition-store";
 import { ExhibitionStatusLabels, getStepFromStatus } from "@/types/exhibition";
 import type { ExhibitionStatus } from "@/types/exhibition";
+import { ChartLineMultiple } from "@/components/charts/chart-line-multiple";
+import { ChartBarNegative } from "@/components/charts/chart-bar-negative";
+import { useDashboardStore } from "@/stores/dashboard-store";
+import { getMergedFinancialData } from "@/mockDataForCharts/mockDataExhibitions";
 
 // Helper function to get next action based on status
 function getNextAction(status: ExhibitionStatus): string {
@@ -127,13 +129,18 @@ export default function OrgOwnerExhibitions() {
     const [sortBy, setSortBy] = useState<string>("الأحدث");
     const [isStatsExpanded, setIsStatsExpanded] = useState(false);
     const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
+    
+    const { monthlyFinancials, fetchMonthlyFinancialAnalytics } = useDashboardStore();
 
     // Fetch exhibitions on mount
     useEffect(() => {
         // TODO: Get actual orgId from auth context
         const orgId = 1;
         fetchExhibitions(orgId);
-    }, [fetchExhibitions]);
+        
+        // Fetch monthly financial analytics
+        fetchMonthlyFinancialAnalytics(orgId);
+    }, [fetchExhibitions, fetchMonthlyFinancialAnalytics]);
 
     // Open sheet when route is /dashboard/exhibitions/createExhibition
     useEffect(() => {
@@ -178,58 +185,52 @@ export default function OrgOwnerExhibitions() {
     ).length;
     const activeNow = exhibitions.filter((ex) => ex.status === "ACTIVE").length;
     const completed = exhibitions.filter((ex) => ex.status === "COMPLETED").length;
+    
+    // Merge real data with mock data for demo
+    const displayFinancials = getMergedFinancialData(monthlyFinancials);
+    
+    // Calculate financial KPIs
+    const currentMonth = displayFinancials?.monthlyStats?.[displayFinancials.monthlyStats.length - 1];
+    const previousMonth = displayFinancials?.monthlyStats?.[displayFinancials.monthlyStats.length - 2];
+    const netProfitChange = currentMonth && previousMonth 
+        ? ((currentMonth.netProfit - previousMonth.netProfit) / Math.abs(previousMonth.netProfit) * 100)
+        : 0;
 
     return (
         <TooltipProvider>
-            <div dir="rtl" className="flex flex-col h-full bg-background">
-                {/* Fixed Header Section */}
-                <div className="flex-shrink-0 p-2 space-y-2 border-b border-border bg-background">
-                    {/* KPI Cards */}
-                    <div className={`grid grid-cols-2 lg:grid-cols-4 gap-2 ${isStatsExpanded ? 'block' : 'hidden lg:grid'}`}>
-                        <Card className="border-none bg-primary/30">
-                            <CardContent className="p-2">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-xs md:text-sm text-primary-foreground/80">إجمالي المعارض</p>
-                                        <p className="text-xl md:text-2xl lg:text-3xl font-bold text-primary-foreground mt-0.5">{totalExhibitions}</p>
-                                    </div>
-                                    <Building2 className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-primary-foreground" />
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-none bg-secondary/30">
-                            <CardContent className="p-2">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-xs md:text-sm text-secondary-foreground/80">قيد الإعداد</p>
-                                        <p className="text-xl md:text-2xl lg:text-3xl font-bold text-secondary-foreground mt-0.5">{inSetup}</p>
-                                    </div>
-                                    <Clock className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-secondary-foreground" />
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-none bg-accent/20">
-                            <CardContent className="p-2">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-xs md:text-sm text-primary-foreground/80">نشطة الآن</p>
-                                        <p className="text-xl md:text-2xl lg:text-3xl font-bold text-primary-foreground mt-0.5">{activeNow}</p>
-                                    </div>
-                                    <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-primary-foreground" />
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-none bg-muted/50">
-                            <CardContent className="p-2">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-xs md:text-sm text-muted-foreground/80">مكتملة</p>
-                                        <p className="text-xl md:text-2xl lg:text-3xl font-bold text-muted-foreground mt-0.5">{completed}</p>
-                                    </div>
-                                    <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-muted-foreground" />
-                                </div>
-                            </CardContent>
-                        </Card>
+            <div dir="rtl" className="bg-background">
+                {/* Header Section */}
+                <div className="p-2 space-y-2 border-b border-border bg-background">
+                    {/* Financial Charts */}
+                    <div className={`grid grid-cols-1 lg:grid-cols-2 gap-2 ${isStatsExpanded ? 'block' : 'hidden lg:grid'}`}>
+                        {/* Monthly Financial Analytics Chart - Left */}
+                        {displayFinancials && displayFinancials.monthlyStats && displayFinancials.monthlyStats.length > 0 && (
+                            <div className="h-72">
+                                <ChartLineMultiple
+                                    data={displayFinancials.monthlyStats.map(stat => ({
+                                        month: stat.month,
+                                        revenue: stat.totalRevenue,
+                                        expenses: stat.totalExpenses,
+                                    }))}
+                                    title="التحليل المالي الشهري"
+                                    description="عرض الإيرادات والمصروفات الشهرية للمعارض المكتملة"
+                                />
+                            </div>
+                        )}
+                        
+                        {/* Net Profit Bar Chart - Right */}
+                        {displayFinancials && displayFinancials.monthlyStats && displayFinancials.monthlyStats.length > 0 && (
+                            <div className="h-72">
+                                <ChartBarNegative
+                                    data={displayFinancials.monthlyStats.map(stat => ({
+                                        month: stat.month,
+                                        netProfit: stat.netProfit,
+                                    }))}
+                                    title="صافي الربح الشهري"
+                                    description="عرض صافي الربح (الإيرادات - المصروفات) للمعارض المكتملة"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* Search and Filters */}
@@ -329,8 +330,8 @@ export default function OrgOwnerExhibitions() {
                     {/* </Card> */}
                 </div>
 
-                {/* Scrollable Content Area */}
-                <div className="flex-1 overflow-y-auto p-2 scrollbar-hide">
+                {/* Content Area */}
+                <div className="p-2">
                     {/* Exhibitions Grid */}
                     {isLoading ? (
                         <Card className="border-dashed border-2 border-border bg-muted/10">
