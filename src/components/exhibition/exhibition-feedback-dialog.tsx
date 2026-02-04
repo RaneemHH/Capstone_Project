@@ -59,9 +59,8 @@ export function ExhibitionFeedbackDialog({
         return Array.from({ length: 5 }, (_, i) => (
             <Star
                 key={i}
-                className={`w-4 h-4 ${
-                    i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-                }`}
+                className={`w-4 h-4 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                    }`}
             />
         ));
     };
@@ -131,7 +130,7 @@ export function ExhibitionFeedbackDialog({
                                                                 {feedback.studentName}
                                                             </div>
                                                             <div className="text-xs text-muted-foreground">
-                                                                {new Date(feedback.createdAt).toLocaleDateString('ar-SA')}
+                                                                {new Date(feedback.createdAt).toLocaleDateString('en-US')}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -139,7 +138,7 @@ export function ExhibitionFeedbackDialog({
                                                         {getRatingStars(feedback.rating)}
                                                     </div>
                                                 </div>
-                                                
+
                                                 {feedback.comments && (
                                                     <div className="pr-12">
                                                         <p className="text-sm text-muted-foreground leading-relaxed">

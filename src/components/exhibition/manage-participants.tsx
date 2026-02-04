@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { Search, ChevronLeft, ChevronRight, Building2, Loader2, UserPlus, ChevronDown, CheckCircle2 } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Building2, Loader2, UserPlus, ChevronDown, CheckCircle2, Pencil, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,16 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { exhibitionService } from "@/services/exhibitionService";
 import { universityParticipationService } from "@/services/university-participation-service";
@@ -28,8 +38,12 @@ import { useActivityProviderStore } from "@/stores/activity-provider-store";
 import { useSchoolParticipationStore } from "@/stores/school-participation-store";
 import { useSchoolStore } from "@/stores/school-store";
 import { useUsersStore } from "@/stores/users-store";
+import { useBoothStore } from "@/stores/booth-store";
+import { useDashboardStore } from "@/stores/dashboard-store";
 import { ConfirmExhibitionDialog } from "@/components/exhibition/confirm-exhibition-dialog";
 import { SetBoothLimitsDialog } from "@/components/exhibition/set-booth-limits-dialog";
+import { ChartPieInteractive } from "@/components/charts/chart-pie-interactive";
+import { ChartBarStacked } from "@/components/charts/chart-bar-stacked";
 import { toast } from "sonner";
 import type { ActivityProviderRequestStatus } from "@/types/activity-provider";
 import type { SchoolParticipationStatus } from "@/types/school-participation";
@@ -39,8 +53,8 @@ const ITEMS_PER_PAGE = 5;
 
 export default function ManageParticipants() {
     const { id } = useParams<{ id: string }>();
-    const { 
-        universities, 
+    const {
+        universities,
         participations,
         isLoadingParticipations,
         fetchAllUniversities,
@@ -65,22 +79,24 @@ export default function ManageParticipants() {
         fetchParticipationsByExhibition: fetchSchoolParticipations
     } = useSchoolParticipationStore();
     const { fetchAllUsers, getUserById } = useUsersStore();
+    const { fetchAvailableBooths } = useBoothStore();
+    const { fetchParticipationStats } = useDashboardStore();
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
-    
+
     // Activity Provider search and pagination
     const [providerSearchQuery, setProviderSearchQuery] = useState("");
     const [providerCurrentPage, setProviderCurrentPage] = useState(1);
-    
+
     // School search and pagination
     const [schoolSearchQuery, setSchoolSearchQuery] = useState("");
     const [schoolCurrentPage, setSchoolCurrentPage] = useState(1);
-    
+
     // Expander states
     const [universitiesOpen, setUniversitiesOpen] = useState(true);
     const [providersOpen, setProvidersOpen] = useState(false);
     const [schoolsOpen, setSchoolsOpen] = useState(false);
-    
+
     // Invite dialog state
     const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
     const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(null);
@@ -131,6 +147,12 @@ export default function ManageParticipants() {
     // Confirm Exhibition Dialog state
     const [confirmExhibitionDialogOpen, setConfirmExhibitionDialogOpen] = useState(false);
 
+    // Cancellation Dialog state
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [cancelTargetId, setCancelTargetId] = useState<number | null>(null);
+    const [cancelTargetType, setCancelTargetType] = useState<'university' | 'school' | 'provider' | null>(null);
+    const [isCancelling, setIsCancelling] = useState(false);
+
     // Booth Limits Dialog state
     const [boothLimitsDialogOpen, setBoothLimitsDialogOpen] = useState(false);
 
@@ -167,7 +189,7 @@ export default function ManageParticipants() {
     useEffect(() => {
         const fetchExhibitionData = async () => {
             if (!id) return;
-            
+
             try {
                 const exhibition = await exhibitionService.getExhibitionById(parseInt(id));
                 setExhibitionStatus(exhibition.status);
@@ -179,6 +201,14 @@ export default function ManageParticipants() {
 
         fetchExhibitionData();
     }, [id]);
+
+    useEffect(() => {
+        if (id) {
+            fetchAvailableBooths(parseInt(id));
+            fetchParticipationStats(parseInt(id));
+        }
+    }, [id, fetchAvailableBooths, fetchParticipationStats]);
+
 
     // Get all participations for this exhibition and enrich with university data
     const participationsArray = Array.from(participations.values()).map(participation => {
@@ -192,8 +222,8 @@ export default function ManageParticipants() {
     });
 
     const filteredParticipations = participationsArray.filter(participation => {
-        const matchesSearch = participation.universityName.includes(searchQuery) || 
-                             participation.contactEmail.includes(searchQuery);
+        const matchesSearch = participation.universityName.includes(searchQuery) ||
+            participation.contactEmail.includes(searchQuery);
         return matchesSearch;
     });
 
@@ -294,10 +324,10 @@ export default function ManageParticipants() {
                     confirmationDeadline: confirmationDeadline || undefined
                 }
             );
-            
+
             toast.success(approve ? 'تم قبول المشاركة بنجاح' : 'تم رفض المشاركة');
             setReviewDialogOpen(false);
-            
+
             // Refresh participations
             await fetchParticipationsByExhibition(parseInt(id));
         } catch (error) {
@@ -316,41 +346,41 @@ export default function ManageParticipants() {
             console.log('Confirming payment for participation ID:', participationId);
             await universityParticipationService.confirmPayment(participationId);
             toast.success('تم تأكيد الدفع بنجاح');
-            
+
             // Refresh participations
             await fetchParticipationsByExhibition(parseInt(id));
         } catch (error: unknown) {
             console.error('Failed to confirm payment:', error);
             console.error('Full error object:', JSON.stringify(error, null, 2));
-            
+
             let errorMessage = 'فشل في تأكيد الدفع';
-            
+
             if (error && typeof error === 'object') {
-                const axiosError = error as { 
-                    response?: { 
+                const axiosError = error as {
+                    response?: {
                         data?: { message?: string; error?: string; };
                         status?: number;
                         statusText?: string;
-                    }; 
+                    };
                     message?: string;
                 };
-                
+
                 if (axiosError.response) {
                     console.error('Response status:', axiosError.response.status);
                     console.error('Response data:', axiosError.response.data);
-                    
+
                     if (axiosError.response.status === 500) {
                         errorMessage = 'خطأ في الخادم (500). يرجى التحقق من: \\n- حالة المشاركة يجب أن تكون ACCEPTED\\n- لم يمر الموعد النهائي للتأكيد\\n- لم يتم تأكيد الدفع مسبقاً';
                     } else {
-                        errorMessage = axiosError.response.data?.message 
-                            || axiosError.response.data?.error 
+                        errorMessage = axiosError.response.data?.message
+                            || axiosError.response.data?.error
                             || `خطأ ${axiosError.response.status}: ${axiosError.response.statusText}`;
                     }
                 } else if (axiosError.message) {
                     errorMessage = axiosError.message;
                 }
             }
-            
+
             toast.error(errorMessage);
         } finally {
             setIsConfirmingPayment(false);
@@ -745,7 +775,7 @@ export default function ManageParticipants() {
             }
         } catch (error) {
             console.error('Failed to mark university attendance:', error);
-            toast.error('فشل في تسجيل حضور الجامعة');
+            toast.error('فشل في تسجيل حضور الجامعة، ربما لأن المعرض لم يبدأ بعد');
         } finally {
             setMarkingAttendanceId(null);
             setMarkingAttendanceType(null);
@@ -763,10 +793,66 @@ export default function ManageParticipants() {
             }
         } catch (error) {
             console.error('Failed to mark school attendance:', error);
-            toast.error('فشل في تسجيل حضور المدرسة');
+            toast.error('فشل في تسجيل حضور المدرسة، ربما لأن المعرض لم يبدأ بعد');
         } finally {
             setMarkingAttendanceId(null);
             setMarkingAttendanceType(null);
+        }
+    };
+
+    const handleCancelUniversityParticipation = (participationId: number) => {
+        setCancelTargetId(participationId);
+        setCancelTargetType('university');
+        setCancelDialogOpen(true);
+    };
+
+    const handleCancelProviderParticipation = (requestId: number) => {
+        setCancelTargetId(requestId);
+        setCancelTargetType('provider');
+        setCancelDialogOpen(true);
+    };
+
+    const handleCancelSchoolParticipation = (participationId: number) => {
+        setCancelTargetId(participationId);
+        setCancelTargetType('school');
+        setCancelDialogOpen(true);
+    };
+
+    const handleConfirmCancellation = async () => {
+        if (!cancelTargetId || !cancelTargetType) return;
+
+        setIsCancelling(true);
+        try {
+            if (cancelTargetType === 'university') {
+                await universityParticipationService.cancelParticipation(cancelTargetId);
+                toast.success('تم إلغاء مشاركة الجامعة بنجاح');
+                if (id) {
+                    fetchParticipationsByExhibition(parseInt(id));
+                }
+            } else if (cancelTargetType === 'school') {
+                await schoolParticipationService.cancelParticipation(cancelTargetId);
+                toast.success('تم إلغاء مشاركة المدرسة بنجاح');
+                if (id) {
+                    fetchSchoolParticipations(parseInt(id));
+                }
+            } else {
+                await activityProviderService.cancelRequest(cancelTargetId, 'Cancelled by Organizer');
+                toast.success('تم إلغاء طلب مزود الأنشطة بنجاح');
+                if (id) {
+                    fetchRequestsByExhibition(parseInt(id));
+                }
+            }
+            if (id) {
+                fetchFinancialData();
+            }
+            setCancelDialogOpen(false);
+        } catch (error) {
+            console.error(`Failed to cancel ${cancelTargetType} participation:`, error);
+            toast.error('فشل في إلغاء المشاركة');
+        } finally {
+            setIsCancelling(false);
+            setCancelTargetId(null);
+            setCancelTargetType(null);
         }
     };
 
@@ -781,7 +867,7 @@ export default function ManageParticipants() {
             }
         } catch (error) {
             console.error('Failed to mark provider attendance:', error);
-            toast.error('فشل في تسجيل حضور مزود الأنشطة');
+            toast.error('فشل في تسجيل حضور مزود الأنشطة، ربما لأن المعرض لم يبدأ بعد');
         } finally {
             setMarkingAttendanceId(null);
             setMarkingAttendanceType(null);
@@ -792,58 +878,62 @@ export default function ManageParticipants() {
     const allUniversities = Array.from(participations.values()).flat();
     const allSchools = Array.from(schoolParticipations.values()).flat();
 
+    const isLimitsLocked = exhibitionStatus ? ['PLANNING', 'CONFIRMED', 'ACTIVE', 'COMPLETED'].includes(exhibitionStatus) : false;
 
     return (
         <div className="flex-1 flex flex-col">
-            {/* Booth Limits Button */}
-            <div className="mb-6">
-                <Card className="bg-blue-50 border-blue-200">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h3 className="text-lg font-semibold text-blue-900 mb-1">تحديد حدود الأماكن</h3>
-                                <p className="text-sm text-blue-700">
-                                    حدد الحد الأقصى للأماكن المخصصة للجامعات ومقدمي الأنشطة
-                                </p>
-                            </div>
-                            <Button
-                                onClick={() => setBoothLimitsDialogOpen(true)}
-                                className="bg-blue-600 hover:bg-blue-700"
-                                size="lg"
-                            >
-                                <Building2 className="w-5 h-5 ml-2" />
-                                تعديل الحدود
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Confirm Exhibition Button */}
-            {exhibitionStatus === 'PLANNING' && (
-                <div className="mb-6">
-                    <Card className="bg-linear-to-r from-green-50 to-emerald-50 border-green-200">
-                        <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-green-900 mb-1">جاهز لتأكيد المعرض؟</h3>
-                                    <p className="text-sm text-green-700">
-                                        تأكد من أن جميع المشاركين جاهزون ثم انقر على الزر لتأكيد المعرض والانتقال إلى الخطوة 3
-                                    </p>
-                                </div>
-                                <Button
-                                    onClick={() => setConfirmExhibitionDialogOpen(true)}
-                                    className="bg-green-600 hover:bg-green-700"
-                                    size="lg"
-                                >
-                                    <CheckCircle2 className="w-5 h-5 ml-2" />
-                                    تأكيد المعرض
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
+            {/* Booth Limits & Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                {/* Stacked Bar Chart - Left */}
+                <div>
+                    <ChartBarStacked />
                 </div>
-            )}
+
+                {/* Right Column - Booth Limits & Pie Chart */}
+                <div className="flex flex-col gap-4">
+                    {/* Booth Limits Action Card */}
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Card
+                                    className={`transition-all border-primary/20 ${!isLimitsLocked ? 'cursor-pointer hover:ring-2 hover:ring-primary/20 hover:bg-primary/5' : 'bg-muted/30 opacity-80'}`}
+                                    onClick={() => {
+                                        if (!isLimitsLocked) {
+                                            setBoothLimitsDialogOpen(true);
+                                        }
+                                    }}
+                                >
+                                    <CardContent className="px-2 py-0">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex-1">
+                                                <p className="text-sm font-bold text-foreground">
+                                                    تحديد حدود الأماكن
+                                                </p>
+                                            </div>
+                                            <div className={`${!isLimitsLocked ? 'bg-primary/10' : 'bg-muted'} p-1.5 rounded-full`}>
+                                                {/* <Building2 className={`w-6 h-6 ${!isLimitsLocked ? 'text-primary' : 'text-muted-foreground'}`} /> */}
+                                                {!isLimitsLocked ? (
+                                                    <Pencil className="w-3 h-3 text-primary/60" />
+                                                ) : (
+                                                    <Lock className="w-3 h-3 text-muted-foreground" />
+                                                )}
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TooltipTrigger>
+                            {isLimitsLocked && (
+                                <TooltipContent>
+                                    <p>لا يمكنك تعديل الحدود بعد بدء التخطيط</p>
+                                </TooltipContent>
+                            )}
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    {/* Pie Chart */}
+                    <ChartPieInteractive />
+                </div>
+            </div>
 
             {/* Universities Section */}
             <Collapsible open={universitiesOpen} onOpenChange={setUniversitiesOpen} className="mb-4">
@@ -881,7 +971,7 @@ export default function ManageParticipants() {
                                                         setInviteDialogOpen(true);
                                                     }}
                                                     className="gap-2"
-                                                    disabled={!hasAvailableUniversities}
+                                                    disabled={!hasAvailableUniversities || !!(exhibitionStatus && ['CONFIRMED', 'ACTIVE', 'COMPLETED'].includes(exhibitionStatus))}
                                                 >
                                                     <UserPlus className="w-4 h-4" />
                                                     إضافة مشارك جديد
@@ -890,9 +980,11 @@ export default function ManageParticipants() {
                                         </TooltipTrigger>
                                         <TooltipContent>
                                             <p>
-                                                {!hasAvailableUniversities 
-                                                    ? 'جميع الجامعات تمت دعوتها بالفعل'
-                                                    : 'إضافة جامعة جديدة للمشاركة في المعرض'
+                                                {exhibitionStatus && ['CONFIRMED', 'ACTIVE', 'COMPLETED'].includes(exhibitionStatus)
+                                                    ? 'لقد قمت بالفعل بتأكيد جميع تفاصيل المعرض، ولا يمكنك إرسال المزيد من الدعوات'
+                                                    : !hasAvailableUniversities
+                                                        ? 'جميع الجامعات تمت دعوتها بالفعل'
+                                                        : 'إضافة جامعة جديدة للمشاركة في المعرض'
                                                 }
                                             </p>
                                         </TooltipContent>
@@ -900,202 +992,212 @@ export default function ManageParticipants() {
                                 </TooltipProvider>
                             </div>
 
-            {/* Table */}
-            <div className="border rounded-xl overflow-hidden mb-6 flex-1 flex-col">
-                <div className="overflow-x-auto flex-1">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="text-right">المعرف</TableHead>
-                                <TableHead className="text-right">اسم الجامعة</TableHead>
-                                <TableHead className="text-right">الحالة</TableHead>
-                                <TableHead className="text-right">الأماكن المعتمدة</TableHead>
-                                <TableHead className="text-right">رسوم المشاركة</TableHead>
-                                <TableHead className="text-right">حالة الدفع</TableHead>
-                                <TableHead className="text-right">تاريخ الدعوة</TableHead>
-                                <TableHead className="text-right">الموعد النهائي</TableHead>
-                                <TableHead className="text-right">الإجراءات</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoadingParticipations ? (
-                                <TableRow>
-                                    <TableCell colSpan={9} className="text-center py-8">
-                                        <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                            <span>جاري تحميل المشاركات...</span>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ) : currentParticipations.length > 0 ? (
-                                currentParticipations.map((participation) => {
-                                    return (
-                                        <TableRow key={participation.id}>
-                                            <TableCell>
-                                                <Badge variant="outline">{participation.id}</Badge>
-                                            </TableCell>
-                                            <TableCell className="font-medium">
-                                                <div className="flex items-center gap-2">
-                                                    <Building2 className="w-4 h-4 text-primary" />
-                                                    <span>{participation.universityName}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge className={getStatusColor(participation.status)}>
-                                                    {getStatusLabel(participation.status)}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                {participation.approvedBoothsCount ? (
-                                                    <Badge variant="secondary">{participation.approvedBoothsCount}</Badge>
-                                                ) : (
-                                                    <span className="text-muted-foreground text-sm">-</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>
-                                                {participation.participationFee ? (
-                                                    <span className="text-sm font-medium">${participation.participationFee.toLocaleString()}</span>
-                                                ) : (
-                                                    <span className="text-muted-foreground text-sm">-</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant={participation.paymentStatus === 'PAID' ? 'default' : 'outline'}>
-                                                    {getPaymentStatusLabel(participation.paymentStatus || 'UNPAID')}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                {participation.invitedAt ? (
-                                                    <span className="text-sm text-muted-foreground">
-                                                        {new Date(participation.invitedAt).toLocaleDateString('ar')}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-muted-foreground text-sm">-</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>
-                                                {participation.responseDeadline ? (
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className={`text-sm ${
-                                                            isConfirmationDeadlinePassed(participation.responseDeadline) 
-                                                                ? 'text-red-600 font-semibold' 
-                                                                : 'text-muted-foreground'
-                                                        }`}>
-                                                            {new Date(participation.responseDeadline).toLocaleDateString('ar')}
-                                                        </span>
-                                                        {isConfirmationDeadlinePassed(participation.responseDeadline) && (
-                                                            <Badge variant="destructive" className="text-xs w-fit">
-                                                                منتهي
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-muted-foreground text-sm">غير محدد</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex gap-2">
-                                                    {participation.status === 'REGISTERED' && (
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={() => handleOpenReviewDialog(participation.id)}
-                                                            variant="outline"
-                                                        >
-                                                            مراجعة
-                                                        </Button>
-                                                    )}
-                                                    {participation.status === 'ACCEPTED' && participation.paymentStatus !== 'PAID' && (
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={() => handleConfirmPayment(participation.id)}
-                                                            disabled={isConfirmingPayment || isConfirmationDeadlinePassed(participation.confirmationDeadline)}
-                                                            variant="default"
-                                                            title={isConfirmationDeadlinePassed(participation.confirmationDeadline) ? 'انتهى الموعد النهائي للتأكيد' : ''}
-                                                        >
-                                                            {isConfirmingPayment ? (
-                                                                <>
-                                                                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                                                                    جاري...
-                                                                </>
-                                                            ) : isConfirmationDeadlinePassed(participation.confirmationDeadline) ? (
-                                                                'انتهى الموعد'
-                                                            ) : (
-                                                                'تأكيد الدفع'
-                                                            )}
-                                                        </Button>
-                                                    )}
-                                                    {/* REMOVED: Universities finalize from their own dashboard */}
-                                                    {(participation.status === 'CONFIRMED' || participation.status === 'FINALIZED') && !participation.attendedAt && (
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={() => handleMarkUniversityAttendance(participation.id)}
-                                                            disabled={markingAttendanceId === participation.id && markingAttendanceType === 'university'}
-                                                            variant="default"
-                                                        >
-                                                            {markingAttendanceId === participation.id && markingAttendanceType === 'university' ? (
-                                                                <>
-                                                                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                                                                    جاري...
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <CheckCircle2 className="w-4 h-4 ml-2" />
-                                                                    تسجيل الحضور
-                                                                </>
-                                                            )}
-                                                        </Button>
-                                                    )}
-                                                    {participation.attendedAt && (
-                                                        <span className="text-xs text-muted-foreground">
-                                                            حضر في: {new Date(participation.attendedAt).toLocaleDateString('en-US')}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                                        {searchQuery ? 'لا توجد نتائج للبحث' : 'لا توجد مشاركات'}
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                            {/* Table */}
+                            <div className="border rounded-xl overflow-hidden mb-6 flex-1 flex-col">
+                                <div className="overflow-x-auto flex-1">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="text-right">المعرف</TableHead>
+                                                <TableHead className="text-right">اسم الجامعة</TableHead>
+                                                <TableHead className="text-right">الحالة</TableHead>
+                                                <TableHead className="text-right">الأماكن المعتمدة</TableHead>
+                                                <TableHead className="text-right">رسوم المشاركة</TableHead>
+                                                <TableHead className="text-right">حالة الدفع</TableHead>
+                                                <TableHead className="text-right">تاريخ الدعوة</TableHead>
+                                                <TableHead className="text-right">الموعد النهائي</TableHead>
+                                                <TableHead className="text-right">الإجراءات</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {isLoadingParticipations ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={9} className="text-center py-8">
+                                                        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                                            <span>جاري تحميل المشاركات...</span>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ) : currentParticipations.length > 0 ? (
+                                                currentParticipations.map((participation) => {
+                                                    return (
+                                                        <TableRow key={participation.id}>
+                                                            <TableCell>
+                                                                <Badge variant="outline">{participation.id}</Badge>
+                                                            </TableCell>
+                                                            <TableCell className="font-medium">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Building2 className="w-4 h-4 text-primary" />
+                                                                    <span>{participation.universityName}</span>
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Badge className={getStatusColor(participation.status)}>
+                                                                    {getStatusLabel(participation.status)}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {participation.approvedBoothsCount ? (
+                                                                    <Badge variant="secondary">{participation.approvedBoothsCount}</Badge>
+                                                                ) : (
+                                                                    <span className="text-muted-foreground text-sm">-</span>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {participation.participationFee ? (
+                                                                    <span className="text-sm font-medium">${participation.participationFee.toLocaleString()}</span>
+                                                                ) : (
+                                                                    <span className="text-muted-foreground text-sm">-</span>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Badge variant={participation.paymentStatus === 'PAID' ? 'default' : 'outline'}>
+                                                                    {getPaymentStatusLabel(participation.paymentStatus || 'UNPAID')}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {participation.invitedAt ? (
+                                                                    <span className="text-sm text-muted-foreground">
+                                                                        {new Date(participation.invitedAt).toLocaleDateString('en-US')}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-muted-foreground text-sm">-</span>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {participation.responseDeadline ? (
+                                                                    <div className="flex flex-col gap-1">
+                                                                        <span className={`text-sm ${isConfirmationDeadlinePassed(participation.responseDeadline)
+                                                                            ? 'text-red-600 font-semibold'
+                                                                            : 'text-muted-foreground'
+                                                                            }`}>
+                                                                            {new Date(participation.responseDeadline).toLocaleDateString('en-US')}
+                                                                        </span>
+                                                                        {isConfirmationDeadlinePassed(participation.responseDeadline) && (
+                                                                            <Badge variant="destructive" className="text-xs w-fit">
+                                                                                منتهي
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-muted-foreground text-sm">غير محدد</span>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex gap-2">
+                                                                    {participation.status === 'REGISTERED' && (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            onClick={() => handleOpenReviewDialog(participation.id)}
+                                                                            variant="outline"
+                                                                        >
+                                                                            مراجعة
+                                                                        </Button>
+                                                                    )}
+                                                                    {participation.status === 'ACCEPTED' && participation.paymentStatus !== 'PAID' && (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            onClick={() => handleConfirmPayment(participation.id)}
+                                                                            disabled={isConfirmingPayment || isConfirmationDeadlinePassed(participation.confirmationDeadline)}
+                                                                            variant="default"
+                                                                            title={isConfirmationDeadlinePassed(participation.confirmationDeadline) ? 'انتهى الموعد النهائي للتأكيد' : ''}
+                                                                        >
+                                                                            {isConfirmingPayment ? (
+                                                                                <>
+                                                                                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                                                                                    جاري...
+                                                                                </>
+                                                                            ) : isConfirmationDeadlinePassed(participation.confirmationDeadline) ? (
+                                                                                'انتهى الموعد'
+                                                                            ) : (
+                                                                                'تأكيد الدفع'
+                                                                            )}
+                                                                        </Button>
+                                                                    )}
+                                                                    {/* REMOVED: Universities finalize from their own dashboard */}
+                                                                    {participation.status === 'FINALIZED' && !participation.attendedAt && (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            onClick={() => handleMarkUniversityAttendance(participation.id)}
+                                                                            disabled={markingAttendanceId === participation.id && markingAttendanceType === 'university'}
+                                                                            variant="default"
+                                                                        >
+                                                                            {markingAttendanceId === participation.id && markingAttendanceType === 'university' ? (
+                                                                                <>
+                                                                                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                                                                                    جاري...
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <CheckCircle2 className="w-4 h-4 ml-2" />
+                                                                                    تسجيل الحضور
+                                                                                </>
+                                                                            )}
+                                                                        </Button>
+                                                                    )}
+                                                                    {participation.attendedAt && (
+                                                                        <span className="text-xs text-muted-foreground">
+                                                                            حضر في: {new Date(participation.attendedAt).toLocaleDateString('en-US')}
+                                                                        </span>
+                                                                    )}
+                                                                    {participation.status !== 'CANCELLED' && (!exhibitionStatus || !['ACTIVE', 'COMPLETED'].includes(exhibitionStatus)) && (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                            onClick={() => handleCancelUniversityParticipation(participation.id)}
+                                                                            disabled={isCancelling}
+                                                                        >
+                                                                            إلغاء
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                                                        {searchQuery ? 'لا توجد نتائج للبحث' : 'لا توجد مشاركات'}
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                    <div className="border-t p-4 flex items-center justify-between bg-muted/20">
-                        <p className="text-sm text-muted-foreground">
-                            عرض {startIndex + 1} - {Math.min(endIndex, filteredParticipations.length)} من {filteredParticipations.length}
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                                className="inline-flex items-center gap-1 px-3 py-2 text-sm bg-card border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                                السابق
-                            </button>
-                            <span className="text-sm text-muted-foreground px-2">
-                                صفحة {currentPage} من {totalPages}
-                            </span>
-                            <button
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                                className="inline-flex items-center gap-1 px-3 py-2 text-sm bg-card border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                التالي
-                                <ChevronLeft className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
+                                {/* Pagination */}
+                                {totalPages > 1 && (
+                                    <div className="border-t p-4 flex items-center justify-between bg-muted/20">
+                                        <p className="text-sm text-muted-foreground">
+                                            عرض {startIndex + 1} - {Math.min(endIndex, filteredParticipations.length)} من {filteredParticipations.length}
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                                disabled={currentPage === 1}
+                                                className="inline-flex items-center gap-1 px-3 py-2 text-sm bg-card border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                <ChevronRight className="w-4 h-4" />
+                                                السابق
+                                            </button>
+                                            <span className="text-sm text-muted-foreground px-2">
+                                                صفحة {currentPage} من {totalPages}
+                                            </span>
+                                            <button
+                                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                                disabled={currentPage === totalPages}
+                                                className="inline-flex items-center gap-1 px-3 py-2 text-sm bg-card border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                التالي
+                                                <ChevronLeft className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </CardContent>
                     </CollapsibleContent>
                 </Card>
@@ -1128,18 +1230,35 @@ export default function ManageParticipants() {
                                         className="pr-10"
                                     />
                                 </div>
-                                <Button
-                                    onClick={() => {
-                                        setSelectedProviderId(null);
-                                        setProviderOrgRequirements("");
-                                        setProviderResponseDeadline("");
-                                        setInviteProviderDialogOpen(true);
-                                    }}
-                                    className="gap-2"
-                                >
-                                    <UserPlus className="w-4 h-4" />
-                                    دعوة مقدم نشاط
-                                </Button>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span className="inline-block">
+                                                <Button
+                                                    onClick={() => {
+                                                        setSelectedProviderId(null);
+                                                        setProviderOrgRequirements("");
+                                                        setProviderResponseDeadline("");
+                                                        setInviteProviderDialogOpen(true);
+                                                    }}
+                                                    className="gap-2"
+                                                    disabled={!!(exhibitionStatus && ['CONFIRMED', 'ACTIVE', 'COMPLETED'].includes(exhibitionStatus))}
+                                                >
+                                                    <UserPlus className="w-4 h-4" />
+                                                    دعوة مقدم نشاط
+                                                </Button>
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>
+                                                {exhibitionStatus && ['CONFIRMED', 'ACTIVE', 'COMPLETED'].includes(exhibitionStatus)
+                                                    ? 'لقد قمت بالفعل بتأكيد جميع تفاصيل المعرض، ولا يمكنك إرسال المزيد من الدعوات'
+                                                    : 'دعوة مقدم نشاط جديد للمشاركة في المعرض'
+                                                }
+                                            </p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
                             </div>
 
                             {/* Table */}
@@ -1171,7 +1290,7 @@ export default function ManageParticipants() {
                                                 </TableRow>
                                             ) : (() => {
                                                 const exhibitionRequests = Array.from(providerRequests.values()).flat().filter(req => req.exhibitionId === Number(id));
-                                                const filteredRequests = exhibitionRequests.filter(req => 
+                                                const filteredRequests = exhibitionRequests.filter(req =>
                                                     req.name.toLowerCase().includes(providerSearchQuery.toLowerCase()) ||
                                                     req.email.toLowerCase().includes(providerSearchQuery.toLowerCase())
                                                 );
@@ -1216,7 +1335,7 @@ export default function ManageParticipants() {
                                                             <TableCell>
                                                                 {request.invitedAt ? (
                                                                     <span className="text-sm text-muted-foreground">
-                                                                        {new Date(request.invitedAt).toLocaleDateString('ar')}
+                                                                        {new Date(request.invitedAt).toLocaleDateString('en-US')}
                                                                     </span>
                                                                 ) : (
                                                                     <span className="text-muted-foreground text-sm">-</span>
@@ -1225,12 +1344,11 @@ export default function ManageParticipants() {
                                                             <TableCell>
                                                                 {request.responseDeadline ? (
                                                                     <div className="flex flex-col gap-1">
-                                                                        <span className={`text-sm ${
-                                                                            isConfirmationDeadlinePassed(request.responseDeadline) 
-                                                                                ? 'text-red-600 font-semibold' 
-                                                                                : 'text-muted-foreground'
-                                                                        }`}>
-                                                                            {new Date(request.responseDeadline).toLocaleDateString('ar')}
+                                                                        <span className={`text-sm ${isConfirmationDeadlinePassed(request.responseDeadline)
+                                                                            ? 'text-red-600 font-semibold'
+                                                                            : 'text-muted-foreground'
+                                                                            }`}>
+                                                                            {new Date(request.responseDeadline).toLocaleDateString('en-US')}
                                                                         </span>
                                                                         {isConfirmationDeadlinePassed(request.responseDeadline) && (
                                                                             <Badge variant="destructive" className="text-xs w-fit">
@@ -1278,6 +1396,17 @@ export default function ManageParticipants() {
                                                                             حضر في: {new Date(request.attendedAt).toLocaleDateString('en-US')}
                                                                         </span>
                                                                     )}
+                                                                    {request.status !== 'CANCELLED' && (!exhibitionStatus || !['ACTIVE', 'COMPLETED'].includes(exhibitionStatus)) && (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                            onClick={() => handleCancelProviderParticipation(request.id)}
+                                                                            disabled={isCancelling}
+                                                                        >
+                                                                            إلغاء
+                                                                        </Button>
+                                                                    )}
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
@@ -1297,7 +1426,7 @@ export default function ManageParticipants() {
                                 {/* Pagination */}
                                 {(() => {
                                     const exhibitionRequests = Array.from(providerRequests.values()).flat().filter(req => req.exhibitionId === Number(id));
-                                    const filteredRequests = exhibitionRequests.filter(req => 
+                                    const filteredRequests = exhibitionRequests.filter(req =>
                                         req.name.toLowerCase().includes(providerSearchQuery.toLowerCase()) ||
                                         req.email.toLowerCase().includes(providerSearchQuery.toLowerCase())
                                     );
@@ -1378,7 +1507,7 @@ export default function ManageParticipants() {
                                                         setInviteSchoolDialogOpen(true);
                                                     }}
                                                     className="gap-2"
-                                                    disabled={!hasAvailableSchools}
+                                                    disabled={!hasAvailableSchools || !!(exhibitionStatus && ['CONFIRMED', 'ACTIVE', 'COMPLETED'].includes(exhibitionStatus))}
                                                 >
                                                     <UserPlus className="w-4 h-4" />
                                                     دعوة مدرسة
@@ -1387,9 +1516,11 @@ export default function ManageParticipants() {
                                         </TooltipTrigger>
                                         <TooltipContent>
                                             <p>
-                                                {!hasAvailableSchools 
-                                                    ? 'جميع المدارس تمت دعوتها بالفعل'
-                                                    : 'إضافة مدرسة جديدة للمشاركة في المعرض'
+                                                {exhibitionStatus && ['CONFIRMED', 'ACTIVE', 'COMPLETED'].includes(exhibitionStatus)
+                                                    ? 'لقد قمت بالفعل بتأكيد جميع تفاصيل المعرض، ولا يمكنك إرسال المزيد من الدعوات'
+                                                    : !hasAvailableSchools
+                                                        ? 'جميع المدارس تمت دعوتها بالفعل'
+                                                        : 'إضافة مدرسة جديدة للمشاركة في المعرض'
                                                 }
                                             </p>
                                         </TooltipContent>
@@ -1425,7 +1556,7 @@ export default function ManageParticipants() {
                                                 </TableRow>
                                             ) : (() => {
                                                 const participations = schoolParticipations.get(Number(id)) || [];
-                                                const filteredParticipations = participations.filter(p => 
+                                                const filteredParticipations = participations.filter(p =>
                                                     p.schoolName.toLowerCase().includes(schoolSearchQuery.toLowerCase()) ||
                                                     p.contactEmail.toLowerCase().includes(schoolSearchQuery.toLowerCase())
                                                 );
@@ -1472,11 +1603,10 @@ export default function ManageParticipants() {
                                                             <TableCell>
                                                                 {participation.responseDeadline ? (
                                                                     <div className="flex flex-col gap-1">
-                                                                        <span className={`text-sm ${
-                                                                            isConfirmationDeadlinePassed(participation.responseDeadline) 
-                                                                                ? 'text-red-600 font-semibold' 
-                                                                                : 'text-muted-foreground'
-                                                                        }`}>
+                                                                        <span className={`text-sm ${isConfirmationDeadlinePassed(participation.responseDeadline)
+                                                                            ? 'text-red-600 font-semibold'
+                                                                            : 'text-muted-foreground'
+                                                                            }`}>
                                                                             {new Date(participation.responseDeadline).toLocaleDateString('ar')}
                                                                         </span>
                                                                         {isConfirmationDeadlinePassed(participation.responseDeadline) && (
@@ -1528,6 +1658,17 @@ export default function ManageParticipants() {
                                                                     {(participation.status === 'CANCELLED' || participation.status === 'REJECTED') && (
                                                                         <span className="text-sm text-muted-foreground">-</span>
                                                                     )}
+                                                                    {participation.status !== 'CANCELLED' && participation.status !== 'REJECTED' && (!exhibitionStatus || !['ACTIVE', 'COMPLETED'].includes(exhibitionStatus)) && (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                            onClick={() => handleCancelSchoolParticipation(participation.id)}
+                                                                            disabled={isCancelling}
+                                                                        >
+                                                                            إلغاء
+                                                                        </Button>
+                                                                    )}
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
@@ -1547,7 +1688,7 @@ export default function ManageParticipants() {
                                 {/* Pagination */}
                                 {(() => {
                                     const participations = schoolParticipations.get(Number(id)) || [];
-                                    const filteredParticipations = participations.filter(p => 
+                                    const filteredParticipations = participations.filter(p =>
                                         p.schoolName.toLowerCase().includes(schoolSearchQuery.toLowerCase()) ||
                                         p.contactEmail.toLowerCase().includes(schoolSearchQuery.toLowerCase())
                                     );
@@ -1591,7 +1732,7 @@ export default function ManageParticipants() {
             </Collapsible>
 
             {/* Filters */}
-            <div className="flex gap-4 mb-6" style={{display: 'none'}}>
+            <div className="flex gap-4 mb-6" style={{ display: 'none' }}>
                 <div className="flex-1 relative">
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -1622,7 +1763,7 @@ export default function ManageParticipants() {
                         </TooltipTrigger>
                         <TooltipContent>
                             <p>
-                                {!hasAvailableUniversities 
+                                {!hasAvailableUniversities
                                     ? 'جميع الجامعات تمت دعوتها بالفعل'
                                     : 'إضافة جامعة جديدة للمشاركة في المعرض'
                                 }
@@ -1633,7 +1774,7 @@ export default function ManageParticipants() {
             </div>
 
             {/* Table */}
-            <div className="border rounded-xl overflow-hidden mb-6 flex-1 flex-col" style={{display: 'none'}}>
+            <div className="border rounded-xl overflow-hidden mb-6 flex-1 flex-col" style={{ display: 'none' }}>
                 <div className="overflow-x-auto flex-1">
                     <Table>
                         <TableHeader>
@@ -1708,11 +1849,10 @@ export default function ManageParticipants() {
                                             <TableCell>
                                                 {participation.responseDeadline ? (
                                                     <div className="flex flex-col gap-1">
-                                                        <span className={`text-sm ${
-                                                            isConfirmationDeadlinePassed(participation.responseDeadline) 
-                                                                ? 'text-red-600 font-semibold' 
-                                                                : 'text-muted-foreground'
-                                                        }`}>
+                                                        <span className={`text-sm ${isConfirmationDeadlinePassed(participation.responseDeadline)
+                                                            ? 'text-red-600 font-semibold'
+                                                            : 'text-muted-foreground'
+                                                            }`}>
                                                             {new Date(participation.responseDeadline).toLocaleDateString('ar')}
                                                         </span>
                                                         {isConfirmationDeadlinePassed(participation.responseDeadline) && (
@@ -1816,7 +1956,7 @@ export default function ManageParticipants() {
                             اختر الجامعة وأدخل تفاصيل الدعوة
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="space-y-4 mt-4" dir="rtl">
                         <div className="space-y-2">
                             <Label htmlFor="university" className="text-right block">
@@ -1835,13 +1975,13 @@ export default function ManageParticipants() {
                                         universities.map((university) => {
                                             const canInvite = canInviteUniversity(university.id);
                                             const participation = participations.get(university.id);
-                                            const statusLabel = participation 
-                                                ? ` (${getStatusLabel(participation.status)})` 
+                                            const statusLabel = participation
+                                                ? ` (${getStatusLabel(participation.status)})`
                                                 : '';
-                                            
+
                                             return (
-                                                <SelectItem 
-                                                    key={university.id} 
+                                                <SelectItem
+                                                    key={university.id}
                                                     value={university.id.toString()}
                                                     disabled={!canInvite}
                                                 >
@@ -1857,7 +1997,7 @@ export default function ManageParticipants() {
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-muted-foreground">
-                                {hasAvailableUniversities 
+                                {hasAvailableUniversities
                                     ? 'الجامعات المعطلة سبق دعوتها لهذا المعرض ولا يمكن دعوتها مجدداً'
                                     : 'تمت دعوة جميع الجامعات المتاحة لهذا المعرض'
                                 }
@@ -1937,7 +2077,7 @@ export default function ManageParticipants() {
                             اختر قبول أو رفض المشاركة ويمكنك تحديد موعد نهائي للتأكيد (اختياري)
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="space-y-4 mt-4" dir="rtl">
                         <div className="space-y-2">
                             <Label htmlFor="confirmationDeadline" className="text-right block">
@@ -2006,7 +2146,7 @@ export default function ManageParticipants() {
                             اختر مقدم النشاط وأدخل تفاصيل الدعوة
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="space-y-4 mt-4" dir="rtl">
                         <div className="space-y-2">
                             <Label htmlFor="provider" className="text-right block">
@@ -2027,8 +2167,8 @@ export default function ManageParticipants() {
                                         </div>
                                     ) : allProviders.length > 0 ? (
                                         allProviders.map((provider) => (
-                                            <SelectItem 
-                                                key={provider.id} 
+                                            <SelectItem
+                                                key={provider.id}
                                                 value={provider.id.toString()}
                                             >
                                                 {provider.name}
@@ -2113,7 +2253,7 @@ export default function ManageParticipants() {
                             اختر قبول أو رفض الاقتراح ويمكنك تحديد موعد نهائي للتأكيد وإضافة ملاحظات
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="space-y-4 mt-4" dir="rtl">
                         {selectedProviderRequestId && (() => {
                             const allRequests = Array.from(providerRequests.values()).flat();
@@ -2222,7 +2362,7 @@ export default function ManageParticipants() {
                             اختر المدرسة وحدد الموعد النهائي للرد
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="space-y-4 mt-4" dir="rtl">
                         <div className="space-y-2">
                             <Label htmlFor="school" className="text-right block">
@@ -2243,8 +2383,8 @@ export default function ManageParticipants() {
                                         </div>
                                     ) : availableSchools.length > 0 ? (
                                         availableSchools.map((school) => (
-                                            <SelectItem 
-                                                key={school.id} 
+                                            <SelectItem
+                                                key={school.id}
                                                 value={school.id.toString()}
                                             >
                                                 {school.name}
@@ -2315,7 +2455,7 @@ export default function ManageParticipants() {
                             اختر قبول أو رفض المشاركة ويمكنك تحديد موعد نهائي للتأكيد
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="space-y-4 mt-4" dir="rtl">
                         {selectedSchoolParticipationId && (() => {
                             const allParticipations = Array.from(schoolParticipations.values()).flat();
@@ -2408,7 +2548,47 @@ export default function ManageParticipants() {
                     onOpenChange={setBoothLimitsDialogOpen}
                 />
             )}
-            
+
+            {/* Cancellation Confirmation Dialog */}
+            <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>هل أنت متأكد من رغبتك في الإلغاء؟</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            هذا الإجراء سيقوم بإلغاء المشاركة نهائياً.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isCancelling}>تراجع</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleConfirmCancellation();
+                            }}
+                            disabled={isCancelling}
+                            className="bg-accent text-accent-foreground hover:bg-accent/80"
+                        >
+                            {isCancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : 'نعم، قم بالإلغاء'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Fixed Confirm Exhibition Button - Bottom Left */}
+            {exhibitionStatus === 'PLANNING' && (
+                <div className="fixed bottom-6 left-6 z-50">
+                    <Button
+                        onClick={() => setConfirmExhibitionDialogOpen(true)}
+                        variant="outline"
+                        size="lg"
+                        className="bg-muted/80 hover:bg-muted border-muted-foreground/20 text-muted-foreground hover:text-foreground shadow-lg backdrop-blur-sm"
+                    >
+                        <CheckCircle2 className="w-5 h-5 ml-2" />
+                        جاهز لتأكيد المعرض؟
+                    </Button>
+                </div>
+            )}
+
         </div>
     );
 

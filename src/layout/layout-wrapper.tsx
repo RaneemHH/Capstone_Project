@@ -31,6 +31,18 @@ export default function LayoutWrapper({ children }: { children?: React.ReactNode
       return crumbs;
     }
     
+    // Check if we're on financial aid apply page
+    if (location.pathname === "/dashboard/financial-aid/apply") {
+      crumbs.push({ 
+        label: "المساعدات المالية", 
+        path: "/dashboard/financial-aid" 
+      });
+      crumbs.push({ 
+        label: "طلب مساعدة مالية" 
+      });
+      return crumbs;
+    }
+    
     // Dashboard breadcrumb for all dashboard routes
     crumbs.push({ label: "لوحة التحكم", path: "/dashboard" });
     

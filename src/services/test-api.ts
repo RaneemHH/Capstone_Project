@@ -170,6 +170,10 @@ export const createVersion = async (
     const response = await api.post(`${url}/versions`, data);
     return response.data;
 };
+<<<<<<< HEAD
+=======
+
+>>>>>>> af39d5553dc1ceec170d86a6065429a4afbcf49a
 // 18. Get all tests by base test ID
 export const getAllTestsByBaseId = async (baseId: number): Promise<AdminTest[]> => {
     const response = await api.get(`${url}/base/${baseId}`);

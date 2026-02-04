@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   type LucideIcon,
   Home,
-  BarChart3,
   ClipboardList,
   Calendar,
   DollarSign,
@@ -60,11 +59,6 @@ export function Sidebar({
       route: "/dashboard/financial-aid",
     },
     {
-      icon: BarChart3,
-      label: "الإحصائيات",
-      route: "/dashboard/analytics",
-    },
-    {
       icon: ClipboardList,
       label: "المحاولات",
       route: "/dashboard/attempts",
@@ -88,12 +82,6 @@ export function Sidebar({
       label: "المساعدات المالية",
       route: "/dashboard/financial-aid",
     },
-  
-    {
-      icon: ClipboardList,
-      label: "محاولاتي",
-      route: "/dashboard/attempts",
-    },
   ];
 
   // Limited menu items for Activity Provider, Municipality Admin, and University Admin
@@ -106,10 +94,10 @@ export function Sidebar({
   ];
 
   const menuItems = isActivityProvider || isMunicipalityAdmin || isUniversityAdmin || isSchoolAdmin
-    ? limitedMenuItems 
-    : isOrgOwner 
-    ? orgOwnerMenuItems 
-    : studentMenuItems;
+    ? limitedMenuItems
+    : isOrgOwner
+      ? orgOwnerMenuItems
+      : studentMenuItems;
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -219,7 +207,7 @@ export function Sidebar({
             })}
           </nav>
 
-         
+
         </div>
       </div>
     </TooltipProvider>

@@ -248,6 +248,7 @@ export default function BaseTest() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="start">
+<<<<<<< HEAD
                                                     <div dir="rtl">
                                                         <DropdownMenuItem
                                                             onClick={(e) => {
@@ -268,6 +269,26 @@ export default function BaseTest() {
                                                             <span>حذف</span>
                                                         </DropdownMenuItem>
                                                     </div>
+=======
+                                                    <DropdownMenuItem
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleOpenDocument(doc.id);
+                                                        }}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        <span>فتح في نافذة جديدة</span>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteDocument(doc.id);
+                                                        }}
+                                                        className="cursor-pointer text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                                                    >
+                                                        <span>حذف</span>
+                                                    </DropdownMenuItem>
+>>>>>>> af39d5553dc1ceec170d86a6065429a4afbcf49a
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
@@ -327,7 +348,11 @@ export default function BaseTest() {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="start" className="w-30">
+<<<<<<< HEAD
                                                         <div dir="rtl">
+=======
+                                                        <div>
+>>>>>>> af39d5553dc1ceec170d86a6065429a4afbcf49a
                                                             <DropdownMenuItem
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();

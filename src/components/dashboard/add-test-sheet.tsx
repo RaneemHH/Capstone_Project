@@ -12,7 +12,7 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet.tsx"
-import {createTest, getAllTests} from "@/services/test-api.ts";
+import {createTest, getAllTestsByBaseId} from "@/services/test-api.ts";
 import {useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 import {useAdminTestsStore} from "@/stores/admin-tests-store.tsx";
@@ -39,7 +39,7 @@ export default function AddTestSheet(){
         try{
             const createdtest = await createTest(newTest);
             console.log("createdtest",createdtest);
-            const updatedTests = await getAllTests();
+            const updatedTests = await getAllTestsByBaseId(Number(baseTestId));
             setAdminTestsResponse(updatedTests);
 
         }catch(error){

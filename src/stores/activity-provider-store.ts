@@ -4,6 +4,7 @@ import type {
     ActivityProviderRequestResponse 
 } from '@/types/activity-provider';
 import { activityProviderService } from '@/services/activity-provider-service';
+import { getMergedActivityProviderRequests } from '@/mockDataForCharts/mockExhibitionDetails';
 
 interface ActivityProviderStore {
     // Owner's providers
@@ -67,9 +68,10 @@ export const useActivityProviderStore = create<ActivityProviderStore>((set, get)
         set({ isLoadingRequests: true });
         try {
             const requests = await activityProviderService.getRequestsByExhibition(exhibitionId);
+            const mergedRequests = getMergedActivityProviderRequests(requests, exhibitionId);
             // Group by providerId
             const requestsMap = new Map<number, ActivityProviderRequestResponse[]>();
-            requests.forEach(request => {
+            mergedRequests.forEach(request => {
                 const existing = requestsMap.get(request.providerId) || [];
                 requestsMap.set(request.providerId, [...existing, request]);
             });

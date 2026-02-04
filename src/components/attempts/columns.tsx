@@ -1,7 +1,7 @@
 import { type ColumnDef } from "@tanstack/react-table";
-import { 
+import {
   MoreHorizontal,
-  ArrowUpDown, 
+  ArrowUpDown,
   Eye,
   Search
 } from "lucide-react";
@@ -63,14 +63,14 @@ const ActionsCell = ({ attemptId }: { attemptId: number }) => {
       <DropdownMenuContent align="start" className="w-45">
         <DropdownMenuItem onClick={() => console.log("View answers")}>
           <Eye className="w-4 h-4 ml-2" />
-            عرض الإجابات
+          عرض الإجابات
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={handleVeiwPersonalityAnalysis}
-          // className="text-destructive focus:text-destructive"
+        // className="text-destructive focus:text-destructive"
         >
           <Search className="w-4 h-4 ml-2" />
-            عرض تحليل الشخصية
+          عرض تحليل الشخصية
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -78,8 +78,8 @@ const ActionsCell = ({ attemptId }: { attemptId: number }) => {
 };
 
 export const columns: ColumnDef<TestAttemptWithAnswersResponse>[] = [
-  
-    {
+
+  {
     accessorKey: "attemptId",
     header: ({ column }) => (
       <Button
@@ -95,31 +95,6 @@ export const columns: ColumnDef<TestAttemptWithAnswersResponse>[] = [
       <span className="text-muted-foreground text-center w-full block">{row.original.attemptId}</span>
     ),
   },
-  {
-    accessorKey: "studentName",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        className="p-0 hover:bg-transparent text-xs font-medium text-muted-foreground w-full justify-center text-center"
-      >
-        اسم الطالب
-        <ArrowUpDown className="mr-1 h-3 w-3" />
-      </Button>
-    ),
-    cell: ({ row }) => {
-      return (
-        <div className="flex items-center gap-3 justify-center w-full text-center">
-          {/* <img
-            src={row.original.avatar}
-            alt={row.original.studentName}
-            className="w-8 h-8 rounded-full object-cover"
-          /> */}
-          <span className="font-medium text-foreground text-center w-full block">{row.original.studentName}</span>
-        </div>
-      );
-    },
-  },
 
   {
     accessorKey: "testTitle",
@@ -129,7 +104,7 @@ export const columns: ColumnDef<TestAttemptWithAnswersResponse>[] = [
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         className="p-0 hover:bg-transparent text-xs font-medium text-muted-foreground w-full justify-center text-center"
       >
-         اسم الاختبار 
+        اسم الاختبار
         <ArrowUpDown className="mr-1 h-3 w-3" />
       </Button>
     ),
@@ -159,7 +134,7 @@ export const columns: ColumnDef<TestAttemptWithAnswersResponse>[] = [
       const result = row.original.evaluationResult.firstMetric + " - " + row.original.evaluationResult.secondMetric + " - " + row.original.evaluationResult.thirdMetric;
       return <span className="text-foreground text-center w-full block">{result}</span>
     },
-    
+
   },
   // {
   //   accessorKey: "type",

@@ -30,6 +30,28 @@ export const boothService = {
     },
 
     /**
+     * Get booths by activity provider request ID
+     * Role: ACTIVITY_PROVIDER, ORG_OWNER
+     */
+    getBoothsByActivityProviderRequest: async (requestId: number): Promise<BoothResponse[]> => {
+        const response = await api.get<BoothResponse[]>(
+            `/api/exhibitions/booths/activity-provider/${requestId}`
+        );
+        return response.data;
+    },
+
+    /**
+     * Get booths by university participation ID
+     * Role: ORG_OWNER, DEVELOPER, UNIVERSITY_ADMIN
+     */
+    getBoothsByUniversityParticipationId: async (universityParticipationId: number): Promise<BoothResponse[]> => {
+        const response = await api.get<BoothResponse[]>(
+            `/api/exhibitions/booths/university/${universityParticipationId}`
+        );
+        return response.data;
+    },
+
+    /**
      * Update booth allocation (zone and booth number)
      * Role: ORG_OWNER, DEVELOPER
      */
