@@ -43,7 +43,7 @@ interface UserInfoResponse {
 
 interface UserUpdateRequest {
     name: string;
-    password: string;
+    password?: string;
 }
 
 interface PageResponse<T> {

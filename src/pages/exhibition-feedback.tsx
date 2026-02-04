@@ -137,7 +137,7 @@ export default function ExhibitionFeedback() {
                         {getAverageRating()}
                     </div>
                     <div className="flex items-center gap-1 mb-3">
-                        {getRatingStars(Math.round(parseFloat(getAverageRating())))}
+                        {getRatingStars(Math.round(parseFloat(String(getAverageRating()))))}
                     </div>
                     <div className="text-muted-foreground text-sm">
                         ({feedbacks.length} تقييمات)

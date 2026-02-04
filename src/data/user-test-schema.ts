@@ -13,7 +13,7 @@ export const subQuestionSchema = z.object({
     id: z.number(),
     subQuestionText: z.string(),
     targetGender: z.enum(["MALE","FEMALE","ALL"]),
-    Metric: z.array(metricSchema),
+    metric: metricSchema,
 });
 export type subQuestion = z.infer<typeof subQuestionSchema>;
 

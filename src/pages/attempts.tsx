@@ -23,7 +23,7 @@ export default function Attempts() {
 let studentId: number | undefined = undefined;
 if (accessToken) {
   try {
-    const decoded: any = jwtDecode(accessToken);
+    const decoded = jwtDecode<{ userId?: number; id?: number; sub?: number }>(String(accessToken));
     studentId = decoded.userId || decoded.id || decoded.sub || undefined;
   } catch {
     studentId = undefined;

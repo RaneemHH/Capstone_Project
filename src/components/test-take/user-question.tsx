@@ -193,7 +193,7 @@ export default function UserQuestion({ questionId, sectionId }: QuestionProps) {
                 .flatMap(section => section.questions ?? [])
                 .filter(question => question.id === questionId)
                 .flatMap(question =>
-                    Object.entries(question.groupedSubQuestions ?? {}).flatMap(([trait, subQuestions]) =>
+                    Object.entries(question.groupedSubQuestions ?? {}).flatMap(([, subQuestions]) =>
                         subQuestions.map(subQuestion => (
                             <UserSubQuestion
                                 key={subQuestion.id}

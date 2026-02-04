@@ -6,12 +6,12 @@ function isValidJWT(token: string | undefined): token is string {
   return !!token && typeof token === "string" && token.split(".").length === 3;
 }
 
-interface Role {
-  id: number;
-  code: string;
-  name: string;
-  description: string;
-}
+// interface Role {
+//   id: number;
+//   code: string;
+//   name: string;
+//   description: string;
+// }
 
 interface AccessTokenPayload {
   roles: string[]; // JWT has roles as string array, not objects

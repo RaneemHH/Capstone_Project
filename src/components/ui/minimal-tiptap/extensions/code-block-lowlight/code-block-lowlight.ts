@@ -7,6 +7,11 @@ export const CodeBlockLowlight = TiptapCodeBlockLowlight.extend({
       ...this.parent?.(),
       lowlight: createLowlight(common),
       defaultLanguage: null,
+      languageClassPrefix: "language-",
+      exitOnTripleEnter: true,
+      exitOnArrowDown: true,
+      enableTabIndentation: false,
+      tabSize: 4,
       HTMLAttributes: {
         class: "block-node",
       },

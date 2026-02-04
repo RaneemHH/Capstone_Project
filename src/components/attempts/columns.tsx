@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { TestAttemptWithAnswersResponse } from "@/types/test-attempt-with-answers-response.ts";
-import React from "react";
+// import React from "react";
 import { useNavigate } from "react-router-dom";
 
 //  type ProductStatus = "معلق" | "نشط" | "غير نشط" | "للبيع" | "مرتد";
@@ -60,7 +60,7 @@ const ActionsCell = ({ attemptId }: { attemptId: number }) => {
           <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-45" dir="rtl">
+      <DropdownMenuContent align="start" className="w-45">
         <DropdownMenuItem onClick={() => console.log("View answers")}>
           <Eye className="w-4 h-4 ml-2" />
             عرض الإجابات

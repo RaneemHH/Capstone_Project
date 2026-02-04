@@ -247,25 +247,27 @@ export default function BaseTest() {
                                                         <MoreVertical className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="start" dir="rtl">
-                                                    <DropdownMenuItem
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleOpenDocument(doc.id);
-                                                        }}
-                                                        className="cursor-pointer"
-                                                    >
-                                                        <span>فتح في نافذة جديدة</span>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDeleteDocument(doc.id);
-                                                        }}
-                                                        className="cursor-pointer text-destructive hover:text-destructive-foreground hover:bg-destructive"
-                                                    >
-                                                        <span>حذف</span>
-                                                    </DropdownMenuItem>
+                                                <DropdownMenuContent align="start">
+                                                    <div dir="rtl">
+                                                        <DropdownMenuItem
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleOpenDocument(doc.id);
+                                                            }}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            <span>فتح في نافذة جديدة</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteDocument(doc.id);
+                                                            }}
+                                                            className="cursor-pointer text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                                                        >
+                                                            <span>حذف</span>
+                                                        </DropdownMenuItem>
+                                                    </div>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
@@ -324,7 +326,7 @@ export default function BaseTest() {
                                                             <MoreVertical className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="start" className="w-30" dir="rtl" asChild>
+                                                    <DropdownMenuContent align="start" className="w-30">
                                                         <div dir="rtl">
                                                             <DropdownMenuItem
                                                                 onClick={(e) => {

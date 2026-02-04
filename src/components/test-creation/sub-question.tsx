@@ -155,7 +155,7 @@ export default function SubQuestion({ subQuestion, testId }: SubQuestionProps){
                                     {genders.map((gender) => (
                                         <SelectItem value={gender.value} key={gender.value} className="cursor-pointer text-sm">
                                             <div className="flex items-center gap-2">
-                                                {gender.icon && <gender.icon className="w-3.5 h-3.5" />}
+                                                {gender.icon && <span className="w-3.5 h-3.5"><gender.icon /></span>}
                                                 <span>{gender.label}</span>
                                             </div>
                                         </SelectItem>
@@ -184,7 +184,6 @@ export default function SubQuestion({ subQuestion, testId }: SubQuestionProps){
                                 </SelectTrigger>
                                 <SelectContent>
                                     {metrics.map((metric) => (
-                                        console.log("Rendering metric item:", metric),
                                         <SelectItem value={metric.id.toString()} key={metric.id} className="cursor-pointer text-sm">
                                             <span>{metric.label} ({metric.code})</span>
                                         </SelectItem>

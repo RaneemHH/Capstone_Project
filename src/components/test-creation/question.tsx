@@ -147,7 +147,7 @@ export default function Question({ questionId, testId, sectionId }: QuestionProp
                                         {genders.map((gender) => (
                                             <SelectItem value={gender.value} key={gender.value} className="cursor-pointer">
                                                 <div className="flex items-center gap-2">
-                                                    {gender.icon && <gender.icon className="w-4 h-4" />}
+                                                    {gender.icon && <span className="w-4 h-4"><gender.icon /></span>}
                                                     <span>{gender.label}</span>
                                                 </div>
                                             </SelectItem>
@@ -178,7 +178,7 @@ export default function Question({ questionId, testId, sectionId }: QuestionProp
                                         {questionTypes.map((type) => (
                                             <SelectItem value={type.value} key={type.value} className="cursor-pointer">
                                                 <div className="flex items-center gap-2">
-                                                    {type.icon && <type.icon className="w-4 h-4" />}
+                                                    {type.icon && <span className="w-4 h-4"><type.icon /></span>}
                                                     <span>{type.label}</span>
                                                 </div>
                                             </SelectItem>

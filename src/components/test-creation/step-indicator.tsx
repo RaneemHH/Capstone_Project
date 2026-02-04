@@ -18,7 +18,7 @@ export function StepIndicator({
         <div className="relative">
           {/* Layer 1: Circles + Connectors (horizontally aligned) */}
           <div className="flex items-center justify-between">
-            {steps.map((step, index) => {
+            {steps.map((_, index) => {
               const stepNumber = index + 1;
               const isCompleted = stepNumber < currentStep;
               const isCurrent = stepNumber === currentStep;
