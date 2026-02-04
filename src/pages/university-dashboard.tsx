@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Building2, FileText, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Building2, FileText, ChevronDown, ChevronUp, Loader2, Search } from "lucide-react";
 import Lottie from "lottie-react";
 import Animation from "../assets/animations/unis.json";
 import { useUniversityStore } from "@/stores/university-store";
@@ -97,6 +97,8 @@ export default function UniversityDashboard() {
     // Cancellation Dialog State
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
     const [participationToCancel, setParticipationToCancel] = useState<UniversityParticipationResponse | null>(null);
+    const [searchQuery, setSearchQuery] = useState<string>("");
+    const [statusFilter, setStatusFilter] = useState<ParticipationStatus | "ALL">("ALL");
 
 
     // Fetch all exhibitions on mount
@@ -131,6 +133,29 @@ export default function UniversityDashboard() {
     // Calculate total requests
     const totalParticipations = Array.from(universityParticipations.values()).flat();
     const totalRequests = totalParticipations.length;
+    const invitedCount = totalParticipations.filter(p => p.status === 'INVITED').length;
+    const registeredCount = totalParticipations.filter(p => p.status === 'REGISTERED').length;
+    const acceptedCount = totalParticipations.filter(p => p.status === 'ACCEPTED' || p.status === 'CONFIRMED' || p.status === 'FINALIZED').length;
+
+    // Filter universities based on search and status
+    const filteredUniversities = ownerUniversities.filter(university => {
+        const participations = universityParticipations.get(university.id) || [];
+        
+        // Check if search matches university name, email, or any exhibition name
+        const matchesSearch = searchQuery.trim() === "" || 
+            university.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            university.contactEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            participations.some(p => {
+                const exhibitionName = getExhibitionName(p.exhibitionId);
+                return exhibitionName.toLowerCase().includes(searchQuery.toLowerCase());
+            });
+        
+        if (!matchesSearch) return false;
+
+        if (statusFilter === "ALL") return true;
+
+        return participations.some(p => p.status === statusFilter);
+    });
 
     const toggleUniversity = (universityId: number) => {
         const newExpanded = new Set(expandedUniversities);
@@ -291,9 +316,8 @@ export default function UniversityDashboard() {
         setBoothsDialogOpen(true);
         setIsLoadingBooths(true);
         try {
-            const allBooths = await boothService.getBoothsByExhibition(participation.exhibitionId);
-            const myBooths = allBooths.filter(b => b.universityParticipationId === participation.id);
-            setAllocatedBooths(myBooths);
+            const booths = await boothService.getBoothsByUniversityParticipationId(participation.id);
+            setAllocatedBooths(booths);
         } catch (error) {
             console.error('Failed to fetch booths:', error);
             toast.error('فشل في تحميل بيانات الأكشاك');
@@ -311,8 +335,50 @@ export default function UniversityDashboard() {
                     <div>
                         {/* Header */}
                         <div className="sticky top-0 bg-card border-b border-border p-4">
-                            <h2 className="text-xl font-bold text-foreground">جامعاتي ومشاركاتها</h2>
-                            <p className="text-sm text-muted-foreground">عرض الجامعات والمعارض المشاركة فيها</p>
+                            <h2 className="text-xl font-bold text-foreground mb-3">جامعاتي ومشاركاتها</h2>
+                            
+                            {/* Search and Filter Bar */}
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <div className="relative flex-1">
+                                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="ابحث بالاسم أو البريد الإلكتروني..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="pr-10"
+                                    />
+                                </div>
+                                <div className="flex gap-2 flex-wrap">
+                                    <Button
+                                        variant={statusFilter === "ALL" ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setStatusFilter("ALL")}
+                                    >
+                                        الكل
+                                    </Button>
+                                    <Button
+                                        variant={statusFilter === "INVITED" ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setStatusFilter("INVITED")}
+                                    >
+                                        دعوات ({invitedCount})
+                                    </Button>
+                                    <Button
+                                        variant={statusFilter === "REGISTERED" ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setStatusFilter("REGISTERED")}
+                                    >
+                                        مسجل ({registeredCount})
+                                    </Button>
+                                    <Button
+                                        variant={statusFilter === "ACCEPTED" ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setStatusFilter("ACCEPTED")}
+                                    >
+                                        مقبول ({acceptedCount})
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Content */}
@@ -321,19 +387,21 @@ export default function UniversityDashboard() {
                                 <div className="flex items-center justify-center py-12">
                                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                                 </div>
-                            ) : ownerUniversities.length === 0 ? (
+                            ) : filteredUniversities.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-center">
                                     <Building2 className="w-16 h-16 text-muted-foreground/50 mb-4" />
                                     <h3 className="text-lg font-semibold text-foreground mb-2">
-                                        لا توجد جامعات مسجلة
+                                        {ownerUniversities.length === 0 ? "لا توجد جامعات مسجلة" : "لا توجد نتائج"}
                                     </h3>
                                     <p className="text-muted-foreground max-w-md">
-                                        لم يتم العثور على جامعات تابعة لحسابك
+                                        {ownerUniversities.length === 0 
+                                            ? "لم يتم العثور على جامعات تابعة لحسابك"
+                                            : "جرب تعديل البحث أو الفلتر"}
                                     </p>
                                 </div>
                             ) : (
                                 <div className="space-y-3">
-                                    {ownerUniversities.map((university) => {
+                                    {filteredUniversities.map((university) => {
                                         const isExpanded = expandedUniversities.has(university.id);
                                         const participations = universityParticipations.get(university.id) || [];
 

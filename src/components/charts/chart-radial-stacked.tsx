@@ -38,20 +38,30 @@ const chartConfig = {
     },
 } satisfies ChartConfig
 
-export function ChartRadialStacked({ revenue, expenses, title = "ملخص الميزانية", description = "تحليل الإيرادات والمصروفات" }: ChartRadialStackedProps) {
+export function ChartRadialStacked({ revenue, expenses, title = "ملخص الإيرادات والمصاريف", description = "تحليل الإيرادات والمصروفات" }: ChartRadialStackedProps) {
     const chartData = [{ name: "budget", revenue: revenue, expenses: expenses }]
     const isTrendingUp = revenue >= expenses
 
     return (
         <Card className="flex flex-col h-full border-primary/20 gap-0">
-            <CardHeader className="items-center p-2 pb-0">
-                <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-                {/* <CardDescription className="text-xs">{description}</CardDescription> */}
-            </CardHeader>
-            <CardContent className="flex flex-1 items-center pb-0">
+            <CardContent className="flex flex-1 items-center justify-between p-4">
+                <div className="flex flex-col gap-1">
+                    <h3 className="text-sm font-semibold text-right">{title}</h3>
+                    <div className="flex items-center gap-1 leading-none font-medium text-[10px]">
+                        {isTrendingUp ? (
+                            <>
+                                الإيرادات تفوق المصروفات <TrendingUp className="h-3 w-3 text-green-600" />
+                            </>
+                        ) : (
+                            <>
+                                المصروفات تفوق الإيرادات <TrendingDown className="h-3 w-3 text-red-600" />
+                            </>
+                        )}
+                    </div>
+                </div>
                 <ChartContainer
                     config={chartConfig}
-                    className="mx-auto w-full max-w-[180px] h-[100px]"
+                    className="w-full max-w-[180px] h-[100px]"
                 >
                     <RadialBarChart
                         data={chartData}
@@ -107,19 +117,6 @@ export function ChartRadialStacked({ revenue, expenses, title = "ملخص الم
                     </RadialBarChart>
                 </ChartContainer>
             </CardContent>
-            <CardFooter className="flex-col gap-1 text-[10px] pb-2 pt-0">
-                <div className="flex items-center gap-1 leading-none font-medium">
-                    {isTrendingUp ? (
-                        <>
-                            الإيرادات تفوق المصروفات <TrendingUp className="h-3 w-3 text-green-600" />
-                        </>
-                    ) : (
-                        <>
-                            المصروفات تفوق الإيرادات <TrendingDown className="h-3 w-3 text-red-600" />
-                        </>
-                    )}
-                </div>
-            </CardFooter>
         </Card>
     )
 }

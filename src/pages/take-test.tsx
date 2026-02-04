@@ -149,6 +149,20 @@ export default function TakeTest() {
             const result = await finalizeAttempt(attemptId);
 
             console.log("Test finalized successfully:", result);
+            
+            // Log the scoring calculation for verification
+            if (result.metricScores) {
+                const totalScore = Object.values(result.metricScores).reduce((sum: number, score: number) => sum + score, 0);
+                console.log("=== Final Score Calculation ===");
+                console.log("Metric Scores:", result.metricScores);
+                console.log("Total Points:", totalScore);
+                console.log("Scoring Logic:");
+                console.log("  - CHECKBOX questions: 1 point per answered question to the connected metric");
+                console.log("  - SCALE questions: Selected value (1-7) points to the connected trait");
+                console.log("  - Total = Sum of all points from all answered questions");
+                console.log("===============================");
+            }
+            
             // Clear answers after successful submission
             setAnswers([]);
             // Navigate to results page with attemptId
@@ -206,12 +220,13 @@ export default function TakeTest() {
                           setActiveSectionId(val);
                       }}
                       className="space-y-4">
-                    <TabsList className=" border-2">
+                    <TabsList className="bg-muted/40 rounded-full p-1 border-0 w-fit mx-auto">
                         {/* [FIX] Use derived sections */}
                         {sections.map((section, idx) => (
                             <TabsTrigger
                                 key={section.id}
                                 value={section.id.toString()}
+                                className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow transition-all"
                                 // [NEW] Disable triggers beyond the immediate next (unless moving backward)
                                 disabled={
                                     currentIndex !== -1 &&

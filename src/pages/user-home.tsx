@@ -8,19 +8,11 @@ import { startTestAttempt } from "@/services/test-attempt.ts";
 import { useNavigate } from "react-router-dom";
 import { useUserTestStore } from "@/stores/user-test-store.tsx";
 import { HeroSection } from "@/components/dashboard/hero-section";
-import { CartesianGrid, Line, LineChart, XAxis } from "recharts";
-import {
-    ChartContainer,
-    ChartTooltip,
-    ChartTooltipContent,
-    type ChartConfig,
-} from "@/components/ui/chart";
 import { useAuthStore } from "@/stores/auth-store";
 import { DataTable } from "@/components/attempts-table/data-table";
 import { columns } from "@/components/attempts/columns";
 import { useTestAttemptsStore } from "@/stores/test-attempts-store";
 import { getAttemptsByStudent } from "@/services/test-attempt";
-import { useMemo } from "react";
 
 export default function UserHome() {
 
@@ -33,7 +25,7 @@ export default function UserHome() {
     console.log("testsResponse", adminTestsResponse);
 
     // Attempts table state and logic
-    const [pageSize, setPageSize] = useState("3");
+    const [pageSize] = useState("3");
     const { attempts, loading, error, setAttempts } = useTestAttemptsStore();
 
 
@@ -86,11 +78,6 @@ export default function UserHome() {
 
 
 
-    // Tab state for chart/table
-    const [activeTab, setActiveTab] = useState<'chart' | 'table'>('chart');
-
-
-
     return (
         <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
             <div className="max-w-7xl mx-auto">
@@ -98,97 +85,19 @@ export default function UserHome() {
                     {/* Left Column - Hero & Stats */}
                     <div className="lg:col-span-2 order-1 lg:order-1 space-y-6">
                         <HeroSection />
-                        {/* Line Chart & Attempts Tabs */}
+                        {/* Attempts Table */}
                         <Card className="md:h-60 lg:h-100 flex flex-col">
-                            <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
-                                <div>
-                                    <CardTitle>الإحصائيات والنتائج</CardTitle>
-                                    <CardDescription>عرض الإحصائيات ومحاولات الاختبار الخاصة بك</CardDescription>
-                                </div>
-                                <div className="flex items-center gap-2 bg-muted/40 rounded-full p-1 w-fit">
-                                    <button
-                                        className={`px-5 py-1.5 rounded-full font-medium transition-all text-sm focus:outline-none
-                                            ${activeTab === 'chart' ? 'bg-primary text-white shadow' : 'text-foreground hover:bg-muted/70'}`}
-                                        onClick={() => setActiveTab('chart')}
-                                        type="button"
-                                    >
-                                        الإحصائيات
-                                    </button>
-                                    <button
-                                        className={`px-5 py-1.5 rounded-full font-medium transition-all text-sm focus:outline-none
-                                            ${activeTab === 'table' ? 'bg-primary text-white shadow' : 'text-foreground hover:bg-muted/70'}`}
-                                        onClick={() => setActiveTab('table')}
-                                        type="button"
-                                    >
-                                        المحاولات
-                                    </button>
-                                </div>
+                            <CardHeader>
+                                <CardTitle>المحاولات</CardTitle>
+                                <CardDescription>عرض محاولات الاختبار الخاصة بك</CardDescription>
                             </CardHeader>
                             <CardContent className="flex-1">
-                                {/* Tab Content */}
-                                {activeTab === 'chart' && (
-                                    <ChartContainer config={{
-                                        desktop: {
-                                            label: "Desktop",
-                                            color: "var(--chart-1)",
-                                        },
-                                        mobile: {
-                                            label: "Mobile",
-                                            color: "var(--chart-2)",
-                                        },
-                                    } satisfies ChartConfig}
-                                        className="h-70 w-full">
-                                        <LineChart
-                                            accessibilityLayer
-                                            data={[
-                                                { month: "January", desktop: 186, mobile: 80 },
-                                                { month: "February", desktop: 305, mobile: 200 },
-                                                { month: "March", desktop: 237, mobile: 120 },
-                                                { month: "April", desktop: 73, mobile: 190 },
-                                                { month: "May", desktop: 209, mobile: 130 },
-                                                { month: "June", desktop: 214, mobile: 140 },
-                                            ]}
-                                            margin={{
-                                                left: 12,
-                                                right: 12,
-                                            }}
-                                        >
-                                            <CartesianGrid vertical={false} />
-                                            <XAxis
-                                                dataKey="month"
-                                                tickLine={false}
-                                                axisLine={false}
-                                                tickMargin={8}
-                                                tickFormatter={(value) => value.slice(0, 3)}
-                                            />
-                                            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                                            <Line
-                                                dataKey="desktop"
-                                                type="monotone"
-                                                stroke="var(--color-desktop)"
-                                                strokeWidth={2}
-                                                dot={false}
-                                            />
-                                            <Line
-                                                dataKey="mobile"
-                                                type="monotone"
-                                                stroke="var(--color-mobile)"
-                                                strokeWidth={2}
-                                                dot={false}
-                                            />
-                                        </LineChart>
-                                    </ChartContainer>
-                                )}
-                                {activeTab === 'table' && (
-                                    <div>
-                                        {loading ? (
-                                            <div className="text-center py-8">جاري التحميل...</div>
-                                        ) : error ? (
-                                            <div className="text-red-500 text-center py-8">{error}</div>
-                                        ) : (
-                                            <DataTable columns={columns} data={attempts} pageSize={parseInt(pageSize)} />
-                                        )}
-                                    </div>
+                                {loading ? (
+                                    <div className="text-center py-8">جاري التحميل...</div>
+                                ) : error ? (
+                                    <div className="text-red-500 text-center py-8">{error}</div>
+                                ) : (
+                                    <DataTable columns={columns} data={attempts} pageSize={parseInt(pageSize)} />
                                 )}
                             </CardContent>
                         </Card>

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { financialAidService } from "@/services/financial-aid-service";
 import type { FinancialAidResponse } from "@/types/financial-aid";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -73,14 +73,14 @@ export default function FinancialAid() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Total Requests Card */}
         <Card className="flex flex-col items-center">
-          <CardContent className="pt-4 pb-3 px-4">
-            <div className="relative flex items-center justify-center w-36 h-36">
-              <Lottie animationData={TotalRequestsAnimation} loop={true} style={{ width: '120px', height: '120px' }} />
+          <CardContent className="pt-3 pb-2 px-3">
+            <div className="relative flex items-center justify-center w-24 h-24">
+              <Lottie animationData={TotalRequestsAnimation} loop={true} style={{ width: '80px', height: '80px' }} />
               {/* <div className="text-5xl font-bold text-foreground">
                 {requests.length}
               </div> */}
             </div>
-            <div className="mt-2 text-center">
+            <div className="mt-1 text-center">
               <div className="text-xs font-medium text-muted-foreground">
                 إجمالي الطلبات - {requests.length}
               </div>
@@ -101,6 +101,8 @@ export default function FinancialAid() {
             },
           } satisfies ChartConfig}
           animationData={PendingRequestsAnimation}
+          innerRadius={40}
+          outerRadius={50}
         />
 
         {/* Approved Requests Stat with Animation */}
@@ -116,6 +118,8 @@ export default function FinancialAid() {
             },
           } satisfies ChartConfig}
           animationData={ApprovedRequestsAnimation}
+          innerRadius={40}
+          outerRadius={50}
         />
 
         {/* Rejected Requests Stat with Animation */}
@@ -131,6 +135,8 @@ export default function FinancialAid() {
             },
           } satisfies ChartConfig}
           animationData={RejectedRequestsAnimation}
+          innerRadius={40}
+          outerRadius={50}
         />
       </div>
 

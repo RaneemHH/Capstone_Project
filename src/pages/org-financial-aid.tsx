@@ -11,7 +11,9 @@ import { toast } from "sonner";
 import { RequestDetailsDialog } from "@/components/financial-aid/request-details-dialog";
 import { ReviewRequestDialog } from "@/components/financial-aid/review-request-dialog";
 import { RadialChart } from "@/components/charts/radial-chart";
+import { ChartScatter } from "@/components/charts/chart-scatter";
 import type { ChartConfig } from "@/components/ui/chart";
+import { getMergedFinancialAidData } from "@/mockDataForCharts/mockDataFinancialAid";
 import TotalRequestsAnimation from "@/assets/animations/total-requests-animation.json";
 import PendingRequestsAnimation from "@/assets/animations/waiting_requests_animation.json";
 import ApprovedRequestsAnimation from "@/assets/animations/accepted-requests-animation.json";
@@ -97,17 +99,30 @@ export default function OrgFinancialAid() {
     return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
   };
 
+  // Merge mock data with real data for demo
+  const displayScatterData = getMergedFinancialAidData(null); // Replace null with real API data when available
+
   return (
     <div className="p-6 space-y-6">
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        {/* Scatter Chart - Left (3 columns, 2 rows) */}
+        <div className="md:col-span-3 md:row-span-2 h-100">
+          <ChartScatter
+            data={displayScatterData}
+            title="توزيع المساعدات المالية"
+            description="عرض عدد الطلبات والمبالغ المطلوبة لكل جامعة"
+          />
+        </div>
+
+        {/* Stats Cards - Right (2 columns, each card takes 1 cell) */}
         {/* Total Requests Card */}
         <Card className="flex flex-col items-center">
-          <CardContent className="pt-4 pb-3 px-4">
-            <div className="relative flex items-center justify-center w-36 h-36">
-              <Lottie animationData={TotalRequestsAnimation} loop={true} style={{ width: '120px', height: '120px' }} />
+          <CardContent className="pt-2 pb-1 px-2">
+            <div className="relative flex items-center justify-center w-16 h-16">
+              <Lottie animationData={TotalRequestsAnimation} loop={true} style={{ width: '50px', height: '50px' }} />
             </div>
-            <div className="mt-2 text-center">
+            <div className="mt-1 text-center">
               <div className="text-xs font-medium text-muted-foreground">
                 إجمالي الطلبات - {Number(stats.totalRequests) || 0}
               </div>
@@ -128,6 +143,8 @@ export default function OrgFinancialAid() {
             },
           } satisfies ChartConfig}
           animationData={PendingRequestsAnimation}
+          innerRadius={25}
+          outerRadius={35}
         />
 
         {/* Approved Requests Stat with Animation */}
@@ -143,15 +160,17 @@ export default function OrgFinancialAid() {
             },
           } satisfies ChartConfig}
           animationData={ApprovedRequestsAnimation}
+          innerRadius={25}
+          outerRadius={35}
         />
 
         {/* Available Budget Card */}
         <Card className="flex flex-col items-center">
-          <CardContent className="pt-4 pb-3 px-4">
-            <div className="relative flex items-center justify-center w-36 h-36">
-              <Lottie animationData={WalletAnimation} loop={true} style={{ width: '120px', height: '120px' }} />
+          <CardContent className="pt-2 pb-1 px-2">
+            <div className="relative flex items-center justify-center w-16 h-16">
+              <Lottie animationData={WalletAnimation} loop={true} style={{ width: '50px', height: '50px' }} />
             </div>
-            <div className="mt-2 text-center">
+            <div className="mt-1 text-center">
               <div className="text-xs font-medium text-muted-foreground">
                 الميزانية المتاحة - {Number(stats.availableBudget || 0).toLocaleString()} $
               </div>

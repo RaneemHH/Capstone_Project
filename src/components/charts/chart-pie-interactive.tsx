@@ -6,7 +6,7 @@ import { Label, Pie, PieChart } from "recharts"
 import {
     Card,
     CardContent,
-    CardDescription,
+    
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
@@ -122,12 +122,12 @@ export function ChartPieInteractive() {
     }
 
     return (
-        <Card>
-            <CardHeader>
+        <Card className="gap-0 pb-0">
+            <CardHeader >
                 <CardTitle>توزيع الأماكن المتاحة</CardTitle>
                 {/* <CardDescription>حسب المنطقة</CardDescription> */}
             </CardHeader>
-            <CardContent className="h-[200px]">
+            <CardContent className="h-[180px]">
                 <ChartContainer
                     config={chartConfig}
                     className="mx-auto aspect-square h-full"

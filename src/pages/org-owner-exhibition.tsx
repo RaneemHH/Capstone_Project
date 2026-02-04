@@ -175,11 +175,11 @@ const OrgOwnerExhibition = () => {
                 // animate={{ opacity: 1, scale: 1 }}
                 // transition={{ duration: 0.3, ease: "easeOut" }}
                 dir="rtl"
-                className="bg-card w-full relative flex flex-col lg:flex-row flex-1"
+                className="bg-card w-full relative flex flex-col lg:flex-row flex-1 overflow-hidden"
             >
 
 
-                {/* Left Panel - Hidden on Mobile/Tablet */}
+                {/* Left Panel - Hidden on Mobile/Tablet - Fixed Height */}
                 <ExhibitionRightPanel currentStep={currentStep} />
 
 
@@ -193,7 +193,7 @@ const OrgOwnerExhibition = () => {
                     />
                 </div>
 
-                {/* Right Panel - Dynamic Content */}
+                {/* Right Panel - Dynamic Content - Scrollable */}
                 <div className="lg:w-[70%] w-full p-4 lg:p-6 flex flex-col overflow-y-auto scrollbar-hide">
                     {exhibition && renderStepContent()}
                 </div>

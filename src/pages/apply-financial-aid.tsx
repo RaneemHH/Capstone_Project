@@ -70,7 +70,7 @@ export default function ApplyFinancialAid() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
+      {/* Back Button */}
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -79,12 +79,6 @@ export default function ApplyFinancialAid() {
         >
           <ArrowRight className="w-5 h-5" />
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold">طلب مساعدة مالية</h1>
-          <p className="text-muted-foreground mt-1">
-            قم بملء النموذج أدناه لتقديم طلب مساعدة مالية
-          </p>
-        </div>
       </div>
 
       {/* Form */}

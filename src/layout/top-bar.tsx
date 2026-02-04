@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -33,8 +33,41 @@ interface TopBarProps {
 
 export function TopBar({ onMenuClick, breadcrumbs }: TopBarProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useAuthStore();
   const { userProfile } = useUserProfileStore();
+
+  // Map routes to page names
+  const getPageName = (pathname: string): string => {
+    const routes: Record<string, string> = {
+      "/dashboard": "لوحة التحكم",
+      "/dashboard/exhibitions": "المعارض",
+      "/dashboard/financial-aid": "المساعدات المالية",
+      "/dashboard/financial-aid/apply": "طلب مساعدة مالية",
+
+      "/dashboard/attempts": "المحاولات",
+      "/profile": "الملف الشخصي",
+    };
+
+    // Check for exact match first
+    if (routes[pathname]) {
+      return routes[pathname];
+    }
+
+    // Check for partial matches (for dynamic routes)
+    for (const [route, name] of Object.entries(routes)) {
+      if (pathname.startsWith(route) && route !== "/dashboard") {
+        return name;
+      }
+    }
+
+    return "لوحة التحكم";
+  };
+
+  const pageName = getPageName(location.pathname);
+  
+  // Check if breadcrumbs has meaningful navigation (more than just dashboard)
+  const hasDetailedBreadcrumbs = breadcrumbs && breadcrumbs.length > 1;
 
   const handleLogout = () => {
     logout();
@@ -71,7 +104,7 @@ export function TopBar({ onMenuClick, breadcrumbs }: TopBarProps) {
               <Menu className="w-6 h-6" />
             </Button>
             <div className="text-right">
-              {breadcrumbs && breadcrumbs.length > 0 ? (
+              {hasDetailedBreadcrumbs ? (
                 <Breadcrumb>
                   <BreadcrumbList className="flex-row-reverse">
                     {[...breadcrumbs].reverse().map((crumb, index, arr) => (
@@ -100,7 +133,7 @@ export function TopBar({ onMenuClick, breadcrumbs }: TopBarProps) {
                 </Breadcrumb>
               ) : (
                 <h1 className="text-foreground text-lg md:text-xl lg:text-2xl mb-0 md:mb-1">
-                  لوحة التحكم
+                  {pageName}
                 </h1>
               )}
               {/* <p className="text-muted-foreground text-xs md:text-sm hidden md:block">

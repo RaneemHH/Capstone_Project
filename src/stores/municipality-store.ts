@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { municipalityService } from '@/services/municipalityService';
 import type { MunicipalityResponse } from '@/types/municipality';
+import { getMergedMunicipalities } from '@/mockDataForCharts/mockExhibitionDetails';
 
 interface MunicipalityStore {
     municipalities: MunicipalityResponse[];
@@ -22,6 +23,7 @@ export const useMunicipalityStore = create<MunicipalityStore>((set) => ({
         set({ isLoading: true, error: null });
         try {
             const municipalities = await municipalityService.getAllMunicipalities();
+            // Note: Merging will happen at component level based on exhibition ID
             set({ municipalities, isLoading: false });
         } catch (error) {
             console.error('Failed to fetch municipalities:', error);

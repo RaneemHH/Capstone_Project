@@ -3,6 +3,7 @@ import { venueRequestService } from '@/services/venue-request-service';
 import { municipalityService } from '@/services/municipalityService';
 import type { VenueRequestResponse } from '@/types/municipality';
 import { toast } from "sonner";
+import { getMergedVenueRequests } from '@/mockDataForCharts/mockExhibitionDetails';
 
 interface VenueRequestStore {
     venueRequests: VenueRequestResponse[];
@@ -24,7 +25,8 @@ export const useVenueRequestStore = create<VenueRequestStore>((set) => ({
             const requests = exhibitionId 
                 ? await venueRequestService.getRequestsForVenue(exhibitionId)
                 : await venueRequestService.getAllRequests();
-            set({ venueRequests: requests, isLoading: false });
+            const mergedRequests = exhibitionId ? getMergedVenueRequests(requests, exhibitionId) : requests;
+            set({ venueRequests: mergedRequests, isLoading: false });
         } catch (error) {
             console.error('Failed to fetch venue requests:', error);
             set({

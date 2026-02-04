@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { UniversityResponse, UniversityParticipationResponse } from '@/types/university';
 import { universityParticipationService } from '@/services/university-participation-service';
+import { getMergedUniversityParticipations } from '@/mockDataForCharts/mockExhibitionDetails';
 
 interface UniversityStore {
     universities: UniversityResponse[];
@@ -50,9 +51,10 @@ export const useUniversityStore = create<UniversityStore>((set, get) => ({
         set({ isLoadingParticipations: true, error: null });
         try {
             const participations = await universityParticipationService.getParticipationsByExhibition(exhibitionId);
+            const mergedParticipations = getMergedUniversityParticipations(participations, exhibitionId);
             const participationsMap = new Map<number, UniversityParticipationResponse>();
             
-            participations.forEach(participation => {
+            mergedParticipations.forEach(participation => {
                 participationsMap.set(participation.universityId, participation);
             });
             

@@ -33,7 +33,6 @@ import { universityParticipationService } from "@/services/university-participat
 import { activityProviderService } from "@/services/activity-provider-service";
 import { schoolParticipationService } from "@/services/school-participation-service";
 import { attendanceService } from "@/services/attendance-service";
-import { exhibitionFinanceService } from "@/services/exhibition-finance-service";
 import { useUniversityStore } from "@/stores/university-store";
 import { useActivityProviderStore } from "@/stores/activity-provider-store";
 import { useSchoolParticipationStore } from "@/stores/school-participation-store";
@@ -45,14 +44,10 @@ import { ConfirmExhibitionDialog } from "@/components/exhibition/confirm-exhibit
 import { SetBoothLimitsDialog } from "@/components/exhibition/set-booth-limits-dialog";
 import { ChartPieInteractive } from "@/components/charts/chart-pie-interactive";
 import { ChartBarStacked } from "@/components/charts/chart-bar-stacked";
-import { ChartRadialStacked } from "@/components/charts/chart-radial-stacked";
 import { toast } from "sonner";
 import type { ActivityProviderRequestStatus } from "@/types/activity-provider";
 import type { SchoolParticipationStatus } from "@/types/school-participation";
-import type { ExhibitionFinancialResponse } from "@/types/exhibition";
 import { Textarea } from "@/components/ui/textarea";
-import MoneyAnimation from "@/assets/animations/money.json";
-import Lottie from "lottie-react";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -161,10 +156,6 @@ export default function ManageParticipants() {
     // Booth Limits Dialog state
     const [boothLimitsDialogOpen, setBoothLimitsDialogOpen] = useState(false);
 
-    // Financial Data state
-    const [financialData, setFinancialData] = useState<ExhibitionFinancialResponse | null>(null);
-    const [isLoadingFinancials, setIsLoadingFinancials] = useState(false);
-
     // Fetch universities on mount
     useEffect(() => {
         fetchAllUniversities();
@@ -211,41 +202,12 @@ export default function ManageParticipants() {
         fetchExhibitionData();
     }, [id]);
 
-    // Fetch financial data
-    const fetchFinancialData = useCallback(async () => {
-        if (!id) return;
-        try {
-            setIsLoadingFinancials(true);
-            const data = await exhibitionFinanceService.calculateFinancials(parseInt(id));
-            setFinancialData(data);
-        } catch (error) {
-            console.error('Failed to fetch financial data:', error);
-            // Fallback to get report if calculation fails
-            try {
-                const data = await exhibitionFinanceService.getFinancialReport(parseInt(id));
-                setFinancialData(data);
-            } catch (innerError) {
-                console.error('Failed to get fallback financial report:', innerError);
-            }
-        } finally {
-            setIsLoadingFinancials(false);
-        }
-    }, [id]);
-
     useEffect(() => {
         if (id) {
             fetchAvailableBooths(parseInt(id));
             fetchParticipationStats(parseInt(id));
-            fetchFinancialData();
         }
-    }, [id, fetchAvailableBooths, fetchParticipationStats, fetchFinancialData]);
-
-    // Recalculate financials when participation data changes
-    useEffect(() => {
-        if (id) {
-            fetchFinancialData();
-        }
-    }, [id, participations, providerRequests, schoolParticipations, fetchFinancialData]);
+    }, [id, fetchAvailableBooths, fetchParticipationStats]);
 
 
     // Get all participations for this exhibition and enrich with university data
@@ -920,122 +882,56 @@ export default function ManageParticipants() {
 
     return (
         <div className="flex-1 flex flex-col">
-            {/* Financial Summary & Actions Section */}
-            <div className="mb-6">
-                {isLoadingFinancials ? (
-                    <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {financialData ? (
-                            <>
-                                <div className="md:col-span-2 lg:col-span-1">
-                                    <ChartRadialStacked
-                                        revenue={financialData.totalRevenue}
-                                        expenses={financialData.totalExpenses}
-                                    />
-                                </div>
-                                {/* <Card className="bg-green-50 border-green-200">
-                                    <CardContent className="pt-6">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-sm text-green-700 font-medium">إجمالي الإيرادات</p>
-                                                <p className="text-2xl font-bold text-green-900 mt-1">
-                                                    ${financialData.totalRevenue.toLocaleString()}
-                                                </p>
-                                            </div>
-                                            <TrendingUp className="w-8 h-8 text-green-600" />
-                                        </div>
-                                    </CardContent>
-                                </Card> */}
+            {/* Booth Limits & Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                {/* Stacked Bar Chart - Left */}
+                <div>
+                    <ChartBarStacked />
+                </div>
 
-                                {/* <Card className="bg-red-50 border-red-200">
-                                    <CardContent className="pt-6">
+                {/* Right Column - Booth Limits & Pie Chart */}
+                <div className="flex flex-col gap-4">
+                    {/* Booth Limits Action Card */}
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Card
+                                    className={`transition-all border-primary/20 ${!isLimitsLocked ? 'cursor-pointer hover:ring-2 hover:ring-primary/20 hover:bg-primary/5' : 'bg-muted/30 opacity-80'}`}
+                                    onClick={() => {
+                                        if (!isLimitsLocked) {
+                                            setBoothLimitsDialogOpen(true);
+                                        }
+                                    }}
+                                >
+                                    <CardContent className="px-2 py-0">
                                         <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-sm text-red-700 font-medium">إجمالي المصروفات</p>
-                                                <p className="text-2xl font-bold text-red-900 mt-1">
-                                                    ${financialData.totalExpenses.toLocaleString()}
+                                            <div className="flex-1">
+                                                <p className="text-sm font-bold text-foreground">
+                                                    تحديد حدود الأماكن
                                                 </p>
                                             </div>
-                                            <TrendingDown className="w-8 h-8 text-red-600" />
-                                        </div>
-                                    </CardContent>
-                                </Card> */}
-
-                                <Card className={`${financialData.netProfit >= 0 ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}`}>
-                                    <CardContent className="p-4">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className={`text-sm font-medium ${financialData.netProfit >= 0 ? 'text-blue-700' : 'text-orange-700'}`}>
-                                                    صافي الربح
-                                                </p>
-                                                <p className={`text-2xl font-bold mt-1 ${financialData.netProfit >= 0 ? 'text-blue-900' : 'text-orange-900'}`}>
-                                                    ${financialData.netProfit.toLocaleString()}
-                                                </p>
+                                            <div className={`${!isLimitsLocked ? 'bg-primary/10' : 'bg-muted'} p-1.5 rounded-full`}>
+                                                {/* <Building2 className={`w-6 h-6 ${!isLimitsLocked ? 'text-primary' : 'text-muted-foreground'}`} /> */}
+                                                {!isLimitsLocked ? (
+                                                    <Pencil className="w-3 h-3 text-primary/60" />
+                                                ) : (
+                                                    <Lock className="w-3 h-3 text-muted-foreground" />
+                                                )}
                                             </div>
-                                            {/* <DollarSign className={`w-8 h-8 ${financialData.netProfit >= 0 ? 'text-blue-600' : 'text-orange-600'}`} /> */}
-                                            <Lottie animationData={MoneyAnimation} loop={true} style={{ width: '75px', height: '75px' }} />
                                         </div>
                                     </CardContent>
                                 </Card>
-                            </>
-                        ) : (
-                            <Card className="md:col-span-1 lg:col-span-3 bg-muted/30 border-dashed flex items-center justify-center">
-                                <CardContent className="py-6 text-center text-muted-foreground">
-                                    بيانات الملخص المالي غير متاحة حالياً لهذا المعرض
-                                </CardContent>
-                            </Card>
-                        )}
-                        {/* Booth Limits Action Card */}
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Card
-                                        className={`transition-all border-primary/20 ${!isLimitsLocked ? 'cursor-pointer hover:ring-2 hover:ring-primary/20 hover:bg-primary/5' : 'bg-muted/30 opacity-80'}`}
-                                        onClick={() => {
-                                            if (!isLimitsLocked) {
-                                                setBoothLimitsDialogOpen(true);
-                                            }
-                                        }}
-                                    >
-                                        <CardContent className="p-4">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-medium invisible">الفضاء</p>
-                                                    <p className="text-xl font-bold text-foreground mt-1">
-                                                        تحديد حدود الأماكن
-                                                    </p>
-                                                </div>
-                                                <div className={`${!isLimitsLocked ? 'bg-primary/10' : 'bg-muted'} p-2 rounded-full`}>
-                                                    {/* <Building2 className={`w-6 h-6 ${!isLimitsLocked ? 'text-primary' : 'text-muted-foreground'}`} /> */}
-                                                    {!isLimitsLocked ? (
-                                                        <Pencil className="w-6 h-6 text-primary/60" />
-                                                    ) : (
-                                                        <Lock className="w-6 h-6 text-muted-foreground" />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </TooltipTrigger>
-                                {isLimitsLocked && (
-                                    <TooltipContent>
-                                        <p>لا يمكنك تعديل الحدود بعد بدء التخطيط</p>
-                                    </TooltipContent>
-                                )}
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                )}
-            </div>
+                            </TooltipTrigger>
+                            {isLimitsLocked && (
+                                <TooltipContent>
+                                    <p>لا يمكنك تعديل الحدود بعد بدء التخطيط</p>
+                                </TooltipContent>
+                            )}
+                        </Tooltip>
+                    </TooltipProvider>
 
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <ChartPieInteractive />
-                <div className="lg:col-span-2">
-                    <ChartBarStacked />
+                    {/* Pie Chart */}
+                    <ChartPieInteractive />
                 </div>
             </div>
 

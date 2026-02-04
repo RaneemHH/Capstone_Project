@@ -19,7 +19,6 @@ import LayoutWrapper from "@/layout/layout-wrapper.tsx";
 import { Toaster } from "@/components/ui/sonner.tsx";
 import BaseTest from "./pages/base-test.tsx";
 import Profile from "./pages/profile.tsx";
-import Analytics from "./pages/analytics.tsx";
 import Attempts from "./pages/attempts.tsx";
 import AnalyzePersonality from "./pages/analyze-personality.tsx";
 import OrgOwnerExhibitions from "./pages/org-owner-exhibitions.tsx";
@@ -108,7 +107,6 @@ function App() {
                                     element: <RequestVenue />,
                                 },
                                 { path: 'financial-aid', element: <OrgFinancialAid /> },
-                                { path: 'analytics', element: <Analytics /> },
                                 { path: 'attempts', element: <Attempts /> },
                                 { path: ":attemptId/analyze-personality", element: <AnalyzePersonality /> },
 

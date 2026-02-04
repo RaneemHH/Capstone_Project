@@ -1,7 +1,13 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Building2, FileText, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Building2, FileText, ChevronDown, ChevronUp, Loader2, Search, Filter, TrendingUp, CheckCircle2, XCircle, Clock } from "lucide-react";
 import Lottie from "lottie-react";
 import Animation from "../assets/animations/activity_providers.json";
+import TotalRequestsAnimation from "@/assets/animations/total-requests-animation.json";
+import RejectedRequestsAnimation from "@/assets/animations/rejected-requests-animation.json";
+import PendingRequestsAnimation from "@/assets/animations/waiting_requests_animation.json";
+import ApprovedRequestsAnimation from "@/assets/animations/accepted-requests-animation.json";
+import { RadialChart } from "@/components/charts/radial-chart";
+import type { ChartConfig } from "@/components/ui/chart";
 import { useExhibitionStore } from "@/stores/exhibition-store";
 import { useActivityProviderStore } from "@/stores/activity-provider-store";
 import { useAuthStore } from "@/stores/auth-store";
@@ -34,8 +40,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { activityProviderService } from "@/services/activity-provider-service";
 import { activityService } from "@/services/activity-service";
+import { boothService } from "@/services/booth-service";
 import type { ActivityProviderRequestStatus, ActivityProviderRequestResponse } from "@/types/activity-provider";
 import type { ActivityResponse } from "@/types/activity";
+import type { BoothResponse } from "@/types/booth";
 import { getActivityTypeLabel } from "@/types/activity";
 
 // ... previous imports
@@ -98,11 +106,16 @@ export default function ActivityProviderDashboard() {
     const [proposalText, setProposalText] = useState<string>('');
     const [proposedBoothsCount, setProposedBoothsCount] = useState<number>(1);
     const [totalCost, setTotalCost] = useState<string>('');
+    const [boothDialogOpen, setBoothDialogOpen] = useState(false);
+    const [selectedRequestBooths, setSelectedRequestBooths] = useState<BoothResponse[]>([]);
+    const [isLoadingBooths, setIsLoadingBooths] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isFinalizingRequest, setIsFinalizingRequest] = useState(false);
     const [activities, setActivities] = useState<ActivityResponse[]>([]);
     const [selectedActivityIds, setSelectedActivityIds] = useState<number[]>([]);
     const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+    const [searchQuery, setSearchQuery] = useState<string>("");
+    const [statusFilter, setStatusFilter] = useState<ActivityProviderRequestStatus | "ALL">("ALL");
 
     // Fetch all exhibitions on mount
     useEffect(() => {
@@ -153,6 +166,35 @@ export default function ActivityProviderDashboard() {
     // Calculate total requests
     const totalProviderRequests = Array.from(providerRequests.values()).flat();
     const totalRequests = totalProviderRequests.length;
+    const invitedCount = totalProviderRequests.filter(r => r.status === 'INVITED').length;
+    const approvedCount = totalProviderRequests.filter(r => r.status === 'APPROVED' || r.status === 'CONFIRMED' || r.status === 'FINALIZED').length;
+    const rejectedCount = totalProviderRequests.filter(r => r.status === 'REJECTED' || r.status === 'CANCELLED').length;
+    const pendingCount = totalProviderRequests.filter(r => r.status === 'PROPOSED').length;
+
+    // Filter providers based on search and status
+    const filteredProviders = ownerProviders.filter(provider => {
+        const requests = providerRequests.get(provider.id) || [];
+        
+        // Check if search matches provider name, email, or any exhibition name
+        const matchesSearch = searchQuery.trim() === "" || 
+            provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            provider.contactEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            requests.some(r => {
+                const exhibitionName = getExhibitionName(r.exhibitionId);
+                return exhibitionName.toLowerCase().includes(searchQuery.toLowerCase());
+            });
+        
+        if (!matchesSearch) return false;
+
+        if (statusFilter === "ALL") return true;
+
+        // For APPROVED filter, include APPROVED and FINALIZED statuses
+        if (statusFilter === "APPROVED") {
+            return requests.some(r => r.status === 'APPROVED' || r.status === 'FINALIZED');
+        }
+
+        return requests.some(r => r.status === statusFilter);
+    });
 
     const toggleProvider = (providerId: number) => {
         const newExpanded = new Set(expandedProviders);
@@ -335,68 +377,213 @@ export default function ActivityProviderDashboard() {
         }
     };
 
-    return (
-        <div className="bg-background p-6" dir="rtl">
-            {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Providers List with Requests */}
-                <Card className="lg:col-span-2 border-border">
-                    <div>
-                        {/* Header */}
-                        <div className="sticky top-0 bg-card border-b border-border p-4">
-                            <h2 className="text-xl font-bold text-foreground">مقدمو الأنشطة ومشاركاتهم</h2>
-                            <p className="text-sm text-muted-foreground">عرض مقدمي الأنشطة والمعارض المشاركة فيها</p>
-                        </div>
+    const handleViewBooths = async (requestId: number) => {
+        setIsLoadingBooths(true);
+        setBoothDialogOpen(true);
+        try {
+            const booths = await boothService.getBoothsByActivityProviderRequest(requestId);
+            setSelectedRequestBooths(booths);
+        } catch (error) {
+            console.error('Failed to fetch booths:', error);
+            toast.error("فشل في تحميل الأجنحة");
+            setSelectedRequestBooths([]);
+        } finally {
+            setIsLoadingBooths(false);
+        }
+    };
 
+    return (
+        <div className="bg-background p-6 min-h-screen" dir="rtl">
+            {/* Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                {/* Total Requests Card */}
+                <Card className="flex flex-col items-center">
+                    <CardContent className="pt-3 pb-2 px-3">
+                        <div className="relative flex items-center justify-center w-24 h-24">
+                            <Lottie animationData={TotalRequestsAnimation} loop={true} style={{ width: '80px', height: '80px' }} />
+                        </div>
+                        <div className="mt-1 text-center">
+                            <div className="text-xs font-medium text-muted-foreground">
+                                إجمالي الطلبات - {totalRequests}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Pending Requests Stat with Animation */}
+                <RadialChart
+                    title="بانتظار المراجعة"
+                    value={pendingCount}
+                    maxValue={totalRequests}
+                    fillColor="var(--chart-2)"
+                    config={{
+                        value: {
+                            label: "Requests",
+                            color: "var(--chart-2)",
+                        },
+                    } satisfies ChartConfig}
+                    animationData={PendingRequestsAnimation}
+                    innerRadius={40}
+                    outerRadius={50}
+                />
+
+                {/* Approved Requests Stat with Animation */}
+                <RadialChart
+                    title="مقبول"
+                    value={approvedCount}
+                    maxValue={totalRequests}
+                    fillColor="var(--chart-3)"
+                    config={{
+                        value: {
+                            label: "Requests",
+                            color: "var(--chart-3)",
+                        },
+                    } satisfies ChartConfig}
+                    animationData={ApprovedRequestsAnimation}
+                    innerRadius={40}
+                    outerRadius={50}
+                />
+
+                {/* Rejected Requests Stat with Animation */}
+                <RadialChart
+                    title="مرفوض"
+                    value={rejectedCount}
+                    maxValue={totalRequests}
+                    fillColor="var(--chart-4)"
+                    config={{
+                        value: {
+                            label: "Requests",
+                            color: "var(--chart-4)",
+                        },
+                    } satisfies ChartConfig}
+                    animationData={RejectedRequestsAnimation}
+                    innerRadius={40}
+                    outerRadius={50}
+                />
+            </div>
+
+            {/* Main Content */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Providers List with Requests */}
+                <Card className="lg:col-span-3 border-border">
+                    <CardHeader>
+                        <CardTitle className="text-xl">مقدمو الأنشطة ومشاركاتهم</CardTitle>
+                        
+                        {/* Search and Filter Bar */}
+                        <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                            <div className="relative flex-1">
+                                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="ابحث بالاسم أو البريد الإلكتروني..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pr-10"
+                                />
+                            </div>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant={statusFilter === "ALL" ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setStatusFilter("ALL")}
+                                >
+                                    الكل
+                                </Button>
+                                <Button
+                                    variant={statusFilter === "INVITED" ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setStatusFilter("INVITED")}
+                                >
+                                    دعوات ({invitedCount})
+                                </Button>
+                                <Button
+                                    variant={statusFilter === "PROPOSED" ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setStatusFilter("PROPOSED")}
+                                >
+                                    بانتظار ({pendingCount})
+                                </Button>
+                                <Button
+                                    variant={statusFilter === "APPROVED" ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setStatusFilter("APPROVED")}
+                                >
+                                    مقبول ({approvedCount})
+                                </Button>
+                            </div>
+                        </div>
+                    </CardHeader>
+
+                    <CardContent>
                         {/* Content */}
-                        <div className="p-4">
+                        <div>
                             {isLoadingOwnerProviders ? (
                                 <div className="flex items-center justify-center py-12">
                                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                                 </div>
-                            ) : ownerProviders.length === 0 ? (
+                            ) : filteredProviders.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-center">
                                     <Building2 className="w-16 h-16 text-muted-foreground/50 mb-4" />
                                     <h3 className="text-lg font-semibold text-foreground mb-2">
-                                        لا توجد مقدمي أنشطة مسجلين
+                                        {ownerProviders.length === 0 ? "لا توجد مقدمي أنشطة مسجلين" : "لا توجد نتائج"}
                                     </h3>
                                     <p className="text-muted-foreground max-w-md">
-                                        لم يتم العثور على مقدمي أنشطة تابعين لحسابك
+                                        {ownerProviders.length === 0 
+                                            ? "لم يتم العثور على مقدمي أنشطة تابعين لحسابك"
+                                            : "جرب تعديل البحث أو الفلتر"}
                                     </p>
                                 </div>
                             ) : (
                                 <div className="space-y-3">
-                                    {ownerProviders.map((provider) => {
+                                    {filteredProviders.map((provider) => {
                                         const isExpanded = expandedProviders.has(provider.id);
                                         const requests = providerRequests.get(provider.id) || [];
+                                        const activeRequests = requests.filter(r => r.status !== 'CANCELLED' && r.status !== 'REJECTED').length;
+                                        const needsAction = requests.filter(r => r.status === 'INVITED').length;
 
                                         return (
-                                            <Card key={provider.id} className="border-border">
+                                            <Card key={provider.id} className="border-border hover:shadow-md transition-shadow">
                                                 {/* Provider Header */}
                                                 <div
                                                     className="p-4 cursor-pointer hover:bg-accent/5 transition-colors"
                                                     onClick={() => toggleProvider(provider.id)}
                                                 >
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="bg-primary/10 p-2 rounded-lg">
-                                                                <Building2 className="w-5 h-5 text-primary" />
+                                                        <div className="flex items-center gap-3 flex-1">
+                                                            <div className="bg-primary/10 p-3 rounded-lg">
+                                                                <Building2 className="w-6 h-6 text-primary" />
                                                             </div>
-                                                            <div>
-                                                                <h3 className="font-semibold text-foreground">
-                                                                    {provider.name}
-                                                                </h3>
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <h3 className="font-semibold text-foreground text-lg">
+                                                                        {provider.name}
+                                                                    </h3>
+                                                                    {needsAction > 0 && (
+                                                                        <Badge variant="destructive" className="text-xs">
+                                                                            {needsAction} يحتاج إجراء
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
                                                                 <p className="text-sm text-muted-foreground">
                                                                     {provider.contactEmail}
                                                                 </p>
+                                                                <div className="flex gap-2 mt-2">
+                                                                    {activeRequests > 0 && (
+                                                                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                                                                            {activeRequests} معرض نشط
+                                                                        </Badge>
+                                                                    )}
+                                                                    {requests.length > 0 && (
+                                                                        <Badge variant="outline" className="text-xs">
+                                                                            إجمالي: {requests.length}
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2">
-                                                            {requests.length > 0 && (
-                                                                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                                                                    {requests.length} معرض
-                                                                </Badge>
-                                                            )}
+                                                            <div className="text-sm text-muted-foreground">
+                                                                {isExpanded ? 'إخفاء' : 'عرض'} المعارض
+                                                            </div>
                                                             {isExpanded ? (
                                                                 <ChevronUp className="w-5 h-5 text-muted-foreground" />
                                                             ) : (
@@ -481,14 +668,23 @@ export default function ActivityProviderDashboard() {
 
                                                                                 {request.status === 'INVITED' && (
                                                                                     <>
-                                                                                        <Button
-                                                                                            size="sm"
-                                                                                            className="mt-2 w-full"
-                                                                                            onClick={() => openProposeDialog(request)}
-                                                                                            disabled={isDeadlinePassed(request.responseDeadline)}
-                                                                                        >
-                                                                                            تقديم اقتراح
-                                                                                        </Button>
+                                                                                        <div className="flex gap-2 mt-2">
+                                                                                            <Button
+                                                                                                size="sm"
+                                                                                                className="flex-1"
+                                                                                                onClick={() => openProposeDialog(request)}
+                                                                                                disabled={isDeadlinePassed(request.responseDeadline)}
+                                                                                            >
+                                                                                                تقديم اقتراح
+                                                                                            </Button>
+                                                                                            <Button
+                                                                                                size="sm"
+                                                                                                variant="outline"
+                                                                                                onClick={() => handleViewBooths(request.id)}
+                                                                                            >
+                                                                                                عرض الأجنحة
+                                                                                            </Button>
+                                                                                        </div>
                                                                                         {isDeadlinePassed(request.responseDeadline) && (
                                                                                             <p className="text-xs text-red-600 mt-1">
                                                                                                 انتهى الموعد النهائي للرد
@@ -536,6 +732,14 @@ export default function ActivityProviderDashboard() {
                                                                                                     ) : (
                                                                                                         'إتمام المشاركة'
                                                                                                     )}
+                                                                                                </Button>
+
+                                                                                                <Button
+                                                                                                    size="sm"
+                                                                                                    variant="outline"
+                                                                                                    onClick={() => handleViewBooths(request.id)}
+                                                                                                >
+                                                                                                    عرض الأجنحة
                                                                                                 </Button>
 
                                                                                                 {!isExhibitionActiveOrCompleted && (
@@ -592,6 +796,14 @@ export default function ActivityProviderDashboard() {
                                                                                                     )}
                                                                                                 </Button>
 
+                                                                                                <Button
+                                                                                                    size="sm"
+                                                                                                    variant="outline"
+                                                                                                    onClick={() => handleViewBooths(request.id)}
+                                                                                                >
+                                                                                                    عرض الأجنحة
+                                                                                                </Button>
+
                                                                                                 {!isExhibitionActiveOrCompleted && (
                                                                                                     <Button
                                                                                                         variant="ghost"
@@ -611,6 +823,18 @@ export default function ActivityProviderDashboard() {
                                                                                         </>
                                                                                     );
                                                                                 })()}
+
+                                                                                {/* Show booth button for other statuses */}
+                                                                                {(request.status === 'PROPOSED' || request.status === 'FINALIZED' || request.status === 'REJECTED') && (
+                                                                                    <Button
+                                                                                        size="sm"
+                                                                                        variant="outline"
+                                                                                        className="mt-2 w-full"
+                                                                                        onClick={() => handleViewBooths(request.id)}
+                                                                                    >
+                                                                                        عرض الأجنحة
+                                                                                    </Button>
+                                                                                )}
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -625,45 +849,27 @@ export default function ActivityProviderDashboard() {
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </CardContent>
                 </Card>
 
-                {/* Right Column - Stats and Promotional Card */}
-                <div className="space-y-4">
-                    {/* Total Requests Stat */}
-                    <Card className="border-border">
-                        <CardContent className="p-4">
-                            <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                    <p className="text-xs text-muted-foreground mb-1">إجمالي الطلبات</p>
-                                    <h3 className="text-2xl font-bold text-foreground">{totalRequests}</h3>
-                                </div>
-                                <div className="bg-primary/10 text-primary p-2 rounded-full">
-                                    <FileText className="w-5 h-5" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Promotional Card */}
-                    <Card className="border-0 bg-linear-to-br from-primary to-foreground text-white overflow-hidden relative">
-                        <CardContent className="p-6 relative z-10">
-                            <h3 className="text-xl font-bold mb-3">
-                                مرحباً بك في لوحة التحكم
-                            </h3>
-                            <p className="text-sm text-white/90 mb-6">
-                                راجع الدعوات الجديدة وقدم اقتراحات الأنشطة للمعارض
-                            </p>
-                            <div className="max-h-[250px]">
-                                <Lottie
-                                    animationData={Animation}
-                                    loop={true}
-                                />
-                            </div>
-                        </CardContent>
-                        <div className="absolute bottom-0 left-0 w-full h-32 bg-linear-to-t from-secondary/30 to-transparent" />
-                    </Card>
-                </div>
+                {/* Right Sidebar - Promotional Card */}
+                <Card className="border-0 bg-linear-to-br from-primary to-foreground text-white overflow-hidden relative h-fit">
+                    <CardContent className="p-6 relative z-10">
+                        <h3 className="text-xl font-bold mb-3">
+                            مرحباً بك في لوحة التحكم
+                        </h3>
+                        <p className="text-sm text-white/90 mb-6">
+                            راجع الدعوات الجديدة وقدم اقتراحات الأنشطة للمعارض
+                        </p>
+                        <div className="max-h-[250px]">
+                            <Lottie
+                                animationData={Animation}
+                                loop={true}
+                            />
+                        </div>
+                    </CardContent>
+                    <div className="absolute bottom-0 left-0 w-full h-32 bg-linear-to-t from-secondary/30 to-transparent" />
+                </Card>
             </div>
 
             {/* Proposal Dialog */}
@@ -848,6 +1054,71 @@ export default function ActivityProviderDashboard() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Booths Dialog */}
+            <Dialog open={boothDialogOpen} onOpenChange={setBoothDialogOpen}>
+                <DialogContent className="sm:max-w-[600px]" dir="rtl">
+                    <DialogHeader className="text-right">
+                        <DialogTitle className="text-right">الأجنحة المخصصة</DialogTitle>
+                        <DialogDescription className="text-right">
+                            قائمة بجميع الأجنحة المخصصة لهذا الطلب
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="mt-4" dir="rtl">
+                        {isLoadingBooths ? (
+                            <div className="flex items-center justify-center py-8">
+                                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                                <span className="mr-3 text-muted-foreground">جاري تحميل الأجنحة...</span>
+                            </div>
+                        ) : selectedRequestBooths.length === 0 ? (
+                            <div className="text-center py-8">
+                                <p className="text-muted-foreground">لا توجد أجنحة مخصصة لهذا الطلب</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-border">
+                                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">رقم الجناح</th>
+                                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">المنطقة</th>
+                                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">المدة (دقائق)</th>
+                                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">الحد الأقصى للمشاركين</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {selectedRequestBooths.map((booth) => (
+                                            <tr key={booth.id} className="border-b border-border last:border-0">
+                                                <td className="py-3 px-4 text-sm text-foreground">
+                                                    {booth.boothNumber}
+                                                </td>
+                                                <td className="py-3 px-4 text-sm text-foreground">
+                                                    {booth.zone}
+                                                </td>
+                                                <td className="py-3 px-4 text-sm text-muted-foreground">
+                                                    {booth.durationMinutes || '-'}
+                                                </td>
+                                                <td className="py-3 px-4 text-sm text-muted-foreground">
+                                                    {booth.maxParticipants || '-'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+
+                    <DialogFooter className="mt-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => setBoothDialogOpen(false)}
+                        >
+                            إغلاق
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

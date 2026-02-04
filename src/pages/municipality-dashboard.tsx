@@ -153,11 +153,11 @@ export default function MunicipalityDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
                 {/* Total Requests */}
                 <Card className="flex flex-col items-center">
-                    <CardContent className="pt-4 pb-3 px-4">
-                        <div className="relative flex items-center justify-center w-36 h-36">
-                            <Lottie animationData={TotalRequestsAnimation} loop={true} style={{ width: '120px', height: '120px' }} />
+                    <CardContent className="pt-3 pb-2 px-2">
+                        <div className="relative flex items-center justify-center w-20 h-20">
+                            <Lottie animationData={TotalRequestsAnimation} loop={true} style={{ width: '80px', height: '80px' }} />
                         </div>
-                        <div className="mt-2 text-center">
+                        <div className="mt-1 text-center">
                             <div className="text-xs font-medium text-muted-foreground">
                                 إجمالي الطلبات - {venueRequests.length}
                             </div>
@@ -178,6 +178,8 @@ export default function MunicipalityDashboard() {
                         },
                     } satisfies ChartConfig}
                     animationData={PendingRequestsAnimation}
+                    innerRadius={40}
+                    outerRadius={50}
                 />
 
                 {/* Approved Requests */}
@@ -193,6 +195,8 @@ export default function MunicipalityDashboard() {
                         },
                     } satisfies ChartConfig}
                     animationData={ApprovedRequestsAnimation}
+                    innerRadius={40}
+                    outerRadius={50}
                 />
 
                 {/* Rejected Requests */}
@@ -208,6 +212,8 @@ export default function MunicipalityDashboard() {
                         },
                     } satisfies ChartConfig}
                     animationData={RejectedRequestsAnimation}
+                    innerRadius={40}
+                    outerRadius={50}
                 />
 
                 {/* Urgent Deadlines (Within 7 Days) */}
@@ -228,13 +234,15 @@ export default function MunicipalityDashboard() {
                             color: "var(--chart-6)",
                         },
                     } satisfies ChartConfig}
+                    innerRadius={40}
+                    outerRadius={50}
                     animationData={DeadlineAnimation}
                 />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:flex-1 lg:overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:flex-1 lg:overflow-hidden">
                 {/* Recent Requests */}
-                <Card className="lg:col-span-2 border-border flex flex-col lg:overflow-hidden">
+                <Card className="lg:col-span-3 border-border flex flex-col lg:overflow-hidden">
                     <CardHeader>
                         <CardTitle className="text-foreground">الطلبات الأخيرة</CardTitle>
                     </CardHeader>
@@ -373,7 +381,7 @@ export default function MunicipalityDashboard() {
                 </Card>
 
                 {/* Promotional Card */}
-                <Card className="border-0 bg-linear-to-br from-primary to-foreground text-white overflow-hidden relative">
+                <Card className="lg:w-73 lg:h-100 border-0 bg-linear-to-br from-primary to-foreground text-white overflow-hidden relative">
                     <CardContent className="p-6 relative z-10">
                         <h3 className="text-xl font-bold mb-3">
                             مرحباً بك في لوحة التحكم

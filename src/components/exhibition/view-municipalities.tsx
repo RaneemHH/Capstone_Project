@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { MapPin, Phone, Mail, Building2, Loader2, ChevronLeft, Info, CheckCircle2, XCircle, AlertCircle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VenueRequestStatusLabels, getVenueRequestStatusBadgeClass, type VenueRequestStatus, type VenueRequestResponse } from "@/types/municipality";
+import { getMergedMunicipalities } from "@/mockDataForCharts/mockExhibitionDetails";
 
 export default function Municipality() {
     const navigate = useNavigate();
@@ -72,8 +73,11 @@ export default function Municipality() {
         }
     };
 
+    // Merge with mock data for specific exhibitions
+    const displayMunicipalities = getMergedMunicipalities(municipalities, exhibitionId || 0);
+
     // Filter municipalities based on search query
-    const filteredMunicipalities = municipalities.filter(m =>
+    const filteredMunicipalities = displayMunicipalities.filter(m =>
         m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         m.region.toLowerCase().includes(searchQuery.toLowerCase())
     );

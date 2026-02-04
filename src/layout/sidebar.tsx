@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   type LucideIcon,
   Home,
-  BarChart3,
   ClipboardList,
   Calendar,
   DollarSign,
@@ -58,11 +57,6 @@ export function Sidebar({
       icon: DollarSign,
       label: "المساعدات المالية",
       route: "/dashboard/financial-aid",
-    },
-    {
-      icon: BarChart3,
-      label: "الإحصائيات",
-      route: "/dashboard/analytics",
     },
     {
       icon: ClipboardList,
